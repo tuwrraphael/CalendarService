@@ -23,7 +23,7 @@ namespace CalendarService
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
         {
-            if (config.ExpiresIn >= DateTime.Now)
+            if (config.ExpiresIn <= DateTime.Now)
             {
                 var client = new HttpClient();
                 var dict = new Dictionary<string, string>() {
