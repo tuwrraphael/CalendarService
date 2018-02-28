@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Newtonsoft.Json;
 using System;
@@ -13,14 +14,16 @@ namespace CalendarService
     {
         private readonly IConfigurationRepository repository;
         private readonly IGraphAuthenticationProviderFactory authenticationProviderFactory;
+        private readonly ILogger logger;
         private readonly CalendarConfigurationOptions options;
 
         public CalendarConfigurationsService(IConfigurationRepository repository,
             IOptions<CalendarConfigurationOptions> optionsAccessor,
-            IGraphAuthenticationProviderFactory authenticationProviderFactory)
+            IGraphAuthenticationProviderFactory authenticationProviderFactory, ILoggerFactory logger)
         {
             this.repository = repository;
             this.authenticationProviderFactory = authenticationProviderFactory;
+            this.logger = logger.CreateLogger("CalendarConfigurationsService");
             options = optionsAccessor.Value;
         }
 
@@ -31,16 +34,23 @@ namespace CalendarService
             foreach (var config in storedConfigurations)
             {
                 if (config.Type == "microsoft")
-                {
+                { Feed[] feeds = new Feed[0];
                     var provider = await authenticationProviderFactory.GetByConfig(config);
                     var client = new GraphServiceClient(provider);
-                    var calendars = await client.Me.Calendars.Request().GetAsync();
-                    var feeds = calendars.Select(calendar => new Feed()
+                    try
                     {
-                        Id = calendar.Id,
-                        Name = calendar.Name,
-                        Subscribed = config.SubscribedFeeds.Any(v => v.FeedId == calendar.Id)
-                    }).ToArray();
+                        var calendars = await client.Me.Calendars.Request().GetAsync();
+                        feeds = calendars.Select(calendar => new Feed()
+                        {
+                            Id = calendar.Id,
+                            Name = calendar.Name,
+                            Subscribed = config.SubscribedFeeds.Any(v => v.FeedId == calendar.Id)
+                        }).ToArray();
+                    }
+                    catch(Exception e)
+                    {
+                        logger.LogError(e, "Could not retrieve feeds from MSGraph");
+                    }
                     res.Add(new CalendarConfiguration()
                     {
                         Type = CalendarType.Microsoft,
