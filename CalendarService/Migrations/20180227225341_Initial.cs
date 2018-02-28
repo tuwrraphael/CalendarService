@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 using System;
+using System.Collections.Generic;
 
 namespace CalendarService.Migrations
 {
@@ -39,7 +40,7 @@ namespace CalendarService.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Tokens",
+                name: "Configurations",
                 columns: table => new
                 {
                     Id = table.Column<string>(nullable: false),
@@ -51,13 +52,32 @@ namespace CalendarService.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tokens", x => x.Id);
+                    table.PrimaryKey("PK_Configurations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Tokens_Users_UserId",
+                        name: "FK_Configurations_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Feeds",
+                columns: table => new
+                {
+                    Id = table.Column<string>(nullable: false),
+                    ConfigurationId = table.Column<string>(nullable: true),
+                    FeedId = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Feeds", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Feeds_Configurations_ConfigurationId",
+                        column: x => x.ConfigurationId,
+                        principalTable: "Configurations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -66,9 +86,14 @@ namespace CalendarService.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tokens_UserId",
-                table: "Tokens",
+                name: "IX_Configurations_UserId",
+                table: "Configurations",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Feeds_ConfigurationId",
+                table: "Feeds",
+                column: "ConfigurationId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -77,7 +102,10 @@ namespace CalendarService.Migrations
                 name: "ConfigStates");
 
             migrationBuilder.DropTable(
-                name: "Tokens");
+                name: "Feeds");
+
+            migrationBuilder.DropTable(
+                name: "Configurations");
 
             migrationBuilder.DropTable(
                 name: "Users");

@@ -15,6 +15,13 @@ namespace CalendarService.Controllers
             this.calendarConfigurationService = calendarConfigurationService;
         }
 
+        [HttpGet("list")]
+        [Authorize("User")]
+        public async Task<IActionResult> List()
+        {
+            return Ok(await calendarConfigurationService.GetConfigurations(User.GetId()));
+        }
+
         [Authorize("User")]
         [HttpPost("link")]
         public async Task<IActionResult> Link([FromBody]CalendarLinkRequest request)
@@ -77,6 +84,18 @@ namespace CalendarService.Controllers
         {
             var userId = User.GetId();
             var deleted = await calendarConfigurationService.RemoveConfig(userId, id);
+            if (deleted)
+            {
+                return Ok();
+            }
+            return NotFound();
+        }
+
+        [Authorize("User")]
+        [HttpPut("{id}/feeds")]
+        public async Task<IActionResult> SetFeeds(string id, [FromBody]string[] feedIds)
+        {
+            var deleted = await calendarConfigurationService.SetFeeds(User.GetId(), id, feedIds);
             if (deleted)
             {
                 return Ok();

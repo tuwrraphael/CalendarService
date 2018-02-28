@@ -37,7 +37,7 @@ namespace CalendarService.Migrations
                     b.ToTable("ConfigStates");
                 });
 
-            modelBuilder.Entity("CalendarService.StoredToken", b =>
+            modelBuilder.Entity("CalendarService.StoredConfiguration", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd();
@@ -56,7 +56,23 @@ namespace CalendarService.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tokens");
+                    b.ToTable("Configurations");
+                });
+
+            modelBuilder.Entity("CalendarService.StoredFeed", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("ConfigurationId");
+
+                    b.Property<string>("FeedId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfigurationId");
+
+                    b.ToTable("Feeds");
                 });
 
             modelBuilder.Entity("CalendarService.User", b =>
@@ -76,11 +92,19 @@ namespace CalendarService.Migrations
                         .HasForeignKey("UserId");
                 });
 
-            modelBuilder.Entity("CalendarService.StoredToken", b =>
+            modelBuilder.Entity("CalendarService.StoredConfiguration", b =>
                 {
                     b.HasOne("CalendarService.User", "User")
-                        .WithMany("Tokens")
+                        .WithMany("Configurations")
                         .HasForeignKey("UserId");
+                });
+
+            modelBuilder.Entity("CalendarService.StoredFeed", b =>
+                {
+                    b.HasOne("CalendarService.StoredConfiguration", "Configuration")
+                        .WithMany("SubscribedFeeds")
+                        .HasForeignKey("ConfigurationId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 #pragma warning restore 612, 618
         }

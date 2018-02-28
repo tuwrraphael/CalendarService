@@ -11,5 +11,7 @@ namespace CalendarService
         Task<LinkResult> LinkGoogle(string state, string code);
 
         Task<bool> RemoveConfig(string userId, string configId);
+        Task<CalendarConfiguration[]> GetConfigurations(string v);
+        Task<bool> SetFeeds(string v, string id, string[] feedIds);
     }
 }

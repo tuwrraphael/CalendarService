@@ -11,7 +11,8 @@ namespace CalendarService
 
         public DbSet<User> Users { get; set; }
         public DbSet<StoredConfigState> ConfigStates { get; set; }
-        public DbSet<StoredToken> Tokens { get; set; }
+        public DbSet<StoredConfiguration> Configurations { get; set; }
+        public DbSet<StoredFeed> Feeds { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -22,7 +23,7 @@ namespace CalendarService
             modelBuilder.Entity<User>()
                 .HasKey(v => v.Id);
             modelBuilder.Entity<User>()
-                .HasMany(v => v.Tokens)
+                .HasMany(v => v.Configurations)
                 .WithOne(t => t.User)
                 .HasForeignKey(t => t.UserId);
             modelBuilder.Entity<User>()
@@ -35,7 +36,15 @@ namespace CalendarService
             modelBuilder.Entity<StoredConfigState>()
                 .Property(v => v.StoredTime).IsRequired();
 
-            modelBuilder.Entity<StoredToken>()
+            modelBuilder.Entity<StoredConfiguration>()
+                .HasKey(v => v.Id);
+            modelBuilder.Entity<StoredConfiguration>()
+                .HasMany(v => v.SubscribedFeeds)
+                .WithOne(v => v.Configuration)
+                .HasForeignKey(v => v.ConfigurationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StoredFeed>()
                 .HasKey(v => v.Id);
         }
     }

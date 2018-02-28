@@ -15,38 +15,43 @@ namespace CalendarService
             this.context = context;
         }
 
+        private void AddTokens(StoredConfiguration config, TokenResponse tokens)
+        {
+            config.RefreshToken = tokens.refresh_token;
+            config.AccessToken = tokens.access_token;
+            config.ExpiresIn = DateTime.Now.AddMilliseconds(tokens.expires_in);
+        }
+
         public async Task<string> AddMicrosoftTokens(string userId, TokenResponse tokens)
         {
-            var storedToken = new StoredToken()
+            var storedConfiguration = new StoredConfiguration()
             {
                 Id = Guid.NewGuid().ToString(),
-                AccessToken = tokens.access_token,
-                RefreshToken = tokens.refresh_token,
-                ExpiresIn = DateTime.Now.AddMilliseconds(tokens.expires_in),
                 Type = "microsoft"
             };
-            var user = await context.Users.Include(v => v.Tokens).FirstOrDefaultAsync(v => v.Id == userId);
+            AddTokens(storedConfiguration, tokens);
+            var user = await context.Users.Include(v => v.Configurations).FirstOrDefaultAsync(v => v.Id == userId);
             if (null == user)
             {
                 user = new User()
                 {
                     Id = userId,
-                    Tokens = new List<StoredToken>() {
-                        storedToken
+                    Configurations = new List<StoredConfiguration>() {
+                        storedConfiguration
                     }
                 };
                 await context.Users.AddAsync(user);
             }
             else
             {
-                if (null == user.Tokens)
+                if (null == user.Configurations)
                 {
-                    user.Tokens = new List<StoredToken>();
+                    user.Configurations = new List<StoredConfiguration>();
                 }
-                user.Tokens.Add(storedToken);
+                user.Configurations.Add(storedConfiguration);
             }
             await context.SaveChangesAsync();
-            return storedToken.Id;
+            return storedConfiguration.Id;
         }
 
         public async Task CreateConfigState(string userId, string state, string redirectUri)
@@ -101,12 +106,63 @@ namespace CalendarService
             return null;
         }
 
+        public async Task<StoredConfiguration> GetConfiguration(string configId)
+        {
+            return await context.Configurations.Where(v => v.Id == configId).SingleOrDefaultAsync();
+        }
+
+        public async Task<StoredConfiguration[]> GetConfigurations(string userid)
+        {
+            if (!(await context.Users.AnyAsync(v => v.Id == userid)))
+            {
+                return null;
+            }
+            return await context.Configurations.Include(v => v.SubscribedFeeds).Where(v => v.UserId == userid).ToArrayAsync();
+        }
+
+        public async Task<StoredConfiguration> RefreshTokens(string id, TokenResponse tokens)
+        {
+            var config = await context.Configurations.Where(v => v.Id == id).SingleOrDefaultAsync();
+            AddTokens(config, tokens);
+            await context.SaveChangesAsync();
+            return config;
+        }
+
         public async Task<bool> RemoveConfig(string userId, string configId)
         {
-            var token = await context.Tokens.Where(v => v.UserId == userId && v.Id == configId).SingleOrDefaultAsync();
+            var token = await context.Configurations.Where(v => v.UserId == userId && v.Id == configId).SingleOrDefaultAsync();
             if (null != token)
             {
-                context.Tokens.Remove(token);
+                context.Configurations.Remove(token);
+                await context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> SetFeeds(string userId, string id, string[] feedIds)
+        {
+            var config = await context.Configurations.Include(v => v.SubscribedFeeds).Where(v => v.UserId == userId && v.Id == id).SingleOrDefaultAsync();
+            if (null != config)
+            {
+                foreach (var feed in feedIds)
+                {
+                    if (!config.SubscribedFeeds.Any(v => v.FeedId == feed))
+                    {
+                        config.SubscribedFeeds.Add(new StoredFeed()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            FeedId = feed
+                        });
+                    }
+                }
+                foreach (var feed in config.SubscribedFeeds)
+                {
+                    if (!feedIds.Any(v => v == feed.FeedId))
+                    {
+                        context.Feeds.Remove(feed);
+                    }
+                }
                 await context.SaveChangesAsync();
                 return true;
             }
