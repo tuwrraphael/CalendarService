@@ -51,6 +51,9 @@ namespace CalendarService
             services.AddTransient<ICalendarConfigurationService, CalendarConfigurationsService>();
             services.AddTransient<IGraphAuthenticationProviderFactory, GraphAuthenticationProviderFactory>();
 
+            services.AddTransient<ICalendarService, CalendarService>();
+            services.AddTransient<IGraphCalendarProviderFactory, GraphCalendarProviderFactory>();
+
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>

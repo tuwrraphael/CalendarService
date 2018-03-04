@@ -118,7 +118,6 @@ namespace CalendarService
                 RedirectUri = configState.RedirectUri,
                 Id = id
             };
-
         }
 
         public async Task<bool> RemoveConfig(string userId, string configId)
