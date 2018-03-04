@@ -1,3 +1,4 @@
+
 # CalendarService
 A service to integrate calendar based experiences into applications.
 It solves the problem of merging calendars of different providers for a user and provides a single calendar endpoint for an application.
@@ -13,6 +14,7 @@ The CalendarService uses Authentication via scopes which are provided in bearer 
 Requests authenticated with a bearer token that contains the *calendar.user* scope can link/unlink accounts, configure
 which calendars(feeds) of an account to merge, and view the own merged calendar endpoint for the subject which the bearer token belongs to.
 
+## Scenarios
 Requests authenticated with a bearer token that contains the *calendar.service* scope can access the merged calendar
 endpoint for any identity, it just passes the requested subject by parameter.
 
