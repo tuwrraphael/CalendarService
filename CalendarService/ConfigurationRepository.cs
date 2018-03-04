@@ -19,7 +19,7 @@ namespace CalendarService
         {
             config.RefreshToken = tokens.refresh_token;
             config.AccessToken = tokens.access_token;
-            config.ExpiresIn = DateTime.Now.AddMilliseconds(tokens.expires_in);
+            config.ExpiresIn = DateTime.Now.AddSeconds(tokens.expires_in);
         }
 
         public async Task<string> AddMicrosoftTokens(string userId, TokenResponse tokens)
@@ -27,7 +27,7 @@ namespace CalendarService
             var storedConfiguration = new StoredConfiguration()
             {
                 Id = Guid.NewGuid().ToString(),
-                Type = "microsoft"
+                Type = CalendarType.Microsoft
             };
             AddTokens(storedConfiguration, tokens);
             var user = await context.Users.Include(v => v.Configurations).FirstOrDefaultAsync(v => v.Id == userId);

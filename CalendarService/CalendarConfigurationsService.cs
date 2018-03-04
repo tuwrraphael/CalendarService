@@ -31,10 +31,15 @@ namespace CalendarService
         {
             var storedConfigurations = await repository.GetConfigurations(userid);
             var res = new List<CalendarConfiguration>();
+            if (null == storedConfigurations)
+            {
+                return null;
+            }
             foreach (var config in storedConfigurations)
             {
-                if (config.Type == "microsoft")
-                { Feed[] feeds = new Feed[0];
+                if (config.Type == CalendarType.Microsoft)
+                {
+                    Feed[] feeds = new Feed[0];
                     var provider = await authenticationProviderFactory.GetByConfig(config);
                     var client = new GraphServiceClient(provider);
                     try
@@ -47,13 +52,13 @@ namespace CalendarService
                             Subscribed = config.SubscribedFeeds.Any(v => v.FeedId == calendar.Id)
                         }).ToArray();
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         logger.LogError(e, "Could not retrieve feeds from MSGraph");
                     }
                     res.Add(new CalendarConfiguration()
                     {
-                        Type = CalendarType.Microsoft,
+                        Type = config.Type,
                         Feeds = feeds,
                         Id = config.Id,
                         Identifier = "MS Calendar"
@@ -113,6 +118,7 @@ namespace CalendarService
                 RedirectUri = configState.RedirectUri,
                 Id = id
             };
+
         }
 
         public async Task<bool> RemoveConfig(string userId, string configId)

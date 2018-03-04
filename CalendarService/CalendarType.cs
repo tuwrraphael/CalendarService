@@ -1,8 +1,8 @@
 ﻿namespace CalendarService
 {
-    public enum CalendarType
+    public static class CalendarType
     {
-        Microsoft,
-        Google
+        public const string Microsoft = "microsoft";
+        public const string Google = "google";
     }
 }
