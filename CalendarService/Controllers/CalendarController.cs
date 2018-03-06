@@ -42,7 +42,7 @@ namespace CalendarService.Controllers
 
         [HttpGet("{userId}")]
         [Authorize("Service")]
-        public async Task<IActionResult> GetForUsers(string userId, DateTime? from, DateTime? to)
+        public async Task<IActionResult> GetForUser(string userId, DateTime? from, DateTime? to)
         {
             return await GetCalendarForUser(userId, from, to);
         }
@@ -56,7 +56,7 @@ namespace CalendarService.Controllers
 
         [HttpPatch("{userId}/reminders/{id}")]
         [Authorize("Service")]
-        public async Task<IActionResult> RenewReminder(string userId, ReminderRequest request)
+        public async Task<IActionResult> RenewReminder(string userId, string id)
         {
             return Ok();
         }

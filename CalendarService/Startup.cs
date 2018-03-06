@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ButlerClient;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -47,12 +48,22 @@ namespace CalendarService
                 options.UseSqlite($"Data Source={HostingEnvironment.WebRootPath}\\App_Data\\calendarService.db")
             );
             services.AddTransient<IConfigurationRepository, ConfigurationRepository>();
-            services.Configure<CalendarConfigurationOptions>(Configuration);
+            services.Configure<CalendarConfigurationOptions>(o =>
+            {
+                o.MSClientId = Configuration["MSClientId"];
+                o.MSSecret = Configuration["MSSecret"];
+                var baseUri = Configuration["CalendarServiceBaseUri"];
+                o.MSRedirectUri = $"{baseUri}/api/configuration/ms-connect";
+                o.GraphNotificationUri = $"{baseUri}/api/callback/graph";
+                o.NotificationMaintainanceUri = $"{baseUri}/api/callback/renew-config";
+            });
             services.AddTransient<ICalendarConfigurationService, CalendarConfigurationsService>();
             services.AddTransient<IGraphAuthenticationProviderFactory, GraphAuthenticationProviderFactory>();
 
             services.AddTransient<ICalendarService, CalendarService>();
             services.AddTransient<IGraphCalendarProviderFactory, GraphCalendarProviderFactory>();
+            services.Configure<ButlerOptions>(Configuration);
+            services.AddTransient<IButler, Butler>();
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

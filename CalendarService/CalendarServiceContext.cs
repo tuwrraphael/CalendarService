@@ -46,6 +46,8 @@ namespace CalendarService
 
             modelBuilder.Entity<StoredFeed>()
                 .HasKey(v => v.Id);
+            modelBuilder.Entity<StoredFeed>()
+                .OwnsOne(v => v.Notification);
         }
     }
 }
