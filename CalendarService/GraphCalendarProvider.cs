@@ -11,32 +11,22 @@ namespace CalendarService
 {
     public class GraphCalendarProvider : ICalendarProvider
     {
-        private const uint NotificationExpiration = 5;
-        private const uint RenewNotificationOn = 2;
-        private const uint RenewNotificationThreshold = 4;
+        private const uint NotificationExpiration = 4*60;
 
         private readonly IGraphAuthenticationProviderFactory graphAuthenticationProviderFactory;
         private readonly StoredConfiguration config;
-        private readonly IConfigurationRepository configurationRepository;
-        private readonly IButler butler;
         private readonly CalendarConfigurationOptions options;
-        private readonly ILogger logger;
+
         private IAuthenticationProvider authenticationProvider;
         private async Task<IAuthenticationProvider> AuthenticationProviderAsync() => authenticationProvider ?? (authenticationProvider = await graphAuthenticationProviderFactory.GetByConfig(config));
 
         public GraphCalendarProvider(IGraphAuthenticationProviderFactory graphAuthenticationProviderFactory,
             StoredConfiguration config,
-            IOptions<CalendarConfigurationOptions> optionsAccessor,
-            ILoggerFactory logger,
-            IConfigurationRepository configurationRepository,
-            IButler butler)
+            IOptions<CalendarConfigurationOptions> optionsAccessor)
         {
             this.graphAuthenticationProviderFactory = graphAuthenticationProviderFactory;
             this.config = config;
-            this.configurationRepository = configurationRepository;
-            this.butler = butler;
             options = optionsAccessor.Value;
-            this.logger = logger.CreateLogger("GraphCalendarProvider");
         }
 
         public async Task<Event[]> Get(DateTime from, DateTime to)
@@ -60,83 +50,39 @@ namespace CalendarService
             }).ToArray();
         }
 
-        public async Task MaintainNotifications()
+        public async Task<NotificationInstallation> InstallNotification(string feedId)
         {
-            var client = new GraphServiceClient(await AuthenticationProviderAsync());
-            foreach (var feed in config.SubscribedFeeds)
+            var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
+            var notificationId = Guid.NewGuid().ToString();
+            var result = await client.Subscriptions.Request().AddAsync(new Subscription()
             {
-                if (null == feed.Notification)
-                {
-                    var notificationId = Guid.NewGuid().ToString();
-                    Subscription result;
-                    try
-                    {
-                        result = await client.Subscriptions.Request().AddAsync(new Subscription()
-                        {
-                            ChangeType = "created,updated,deleted",
-                            NotificationUrl = options.GraphNotificationUri,
-                            ClientState = notificationId,
-                            ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration),
-                            Resource = $"/me/calendars/{feed.FeedId}/events"
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError(e, "Could not register notification for feed");
-                        continue;
-                    }
-                    var notification = new StoredNotification()
-                    {
-                        NotificationId = notificationId,
-                        ProviderNotificationId = result.Id,
-                        Expires = result.ExpirationDateTime.Value.UtcDateTime
-                    };
-                    await configurationRepository.UpdateNotification(feed.Id, notification);
-                    feed.Notification = notification;
-                    await butler.InstallAsync(new WebhookRequest()
-                    {
-                        Data = new NotificationMaintainanceRequest()
-                        {
-                            ConfigurationId = config.Id
-                        },
-                        Url = options.NotificationMaintainanceUri,
-                        When = result.ExpirationDateTime.Value.DateTime.AddMinutes(-RenewNotificationOn)
-                    });
-                }
-                else if (feed.Notification.Expires >= DateTime.Now.AddMinutes(-RenewNotificationThreshold))
-                {
-                    Subscription result;
-                    try
-                    {
-                        result = await client.Subscriptions[feed.Notification.ProviderNotificationId].Request()
-                            .UpdateAsync(new Subscription()
-                            {
-                                ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration)
-                            });
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError(e, "Could not register notification for feed");
-                        continue;
-                    }
-                    feed.Notification.Expires = result.ExpirationDateTime.Value.UtcDateTime;
-                    await configurationRepository.UpdateNotification(feed.Id, feed.Notification);
-                    await butler.InstallAsync(new WebhookRequest()
-                    {
-                        Data = new NotificationMaintainanceRequest()
-                        {
-                            ConfigurationId = config.Id
-                        },
-                        Url = options.NotificationMaintainanceUri,
-                        When = DateTime.Now.AddMinutes(RenewNotificationOn)
-                    });
-                }
-            }
+                ChangeType = "created,updated,deleted",
+                NotificationUrl = options.GraphNotificationUri,
+                ClientState = notificationId,
+                ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration),
+                Resource = $"/me/calendars/{feedId}/events"
+            });
+            return new NotificationInstallation()
+            {
+                NotificationId = notificationId,
+                Expires = result.ExpirationDateTime.Value.UtcDateTime,
+                ProviderNotifiactionId = result.Id
+            };
         }
 
-        public Task UninstallNotifications()
+        public async Task<NotificationInstallation> MaintainNotification(NotificationInstallation installation)
         {
-            throw new NotImplementedException();
+            var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
+            var sub = await client.Subscriptions[installation.ProviderNotifiactionId].Request().GetAsync();
+            sub.ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration);
+            var result = await client.Subscriptions[installation.ProviderNotifiactionId].Request()
+                .UpdateAsync(sub);
+            return new NotificationInstallation()
+            {
+                NotificationId = installation.NotificationId,
+                Expires = result.ExpirationDateTime.Value.UtcDateTime,
+                ProviderNotifiactionId = result.Id
+            };
         }
     }
 }

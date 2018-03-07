@@ -6,9 +6,7 @@ namespace CalendarService
     public interface ICalendarProvider
     {
         Task<Event[]> Get(DateTime from, DateTime to);
-
-        Task MaintainNotifications();
-
-        Task UninstallNotifications();
+        Task<NotificationInstallation> InstallNotification(string feedId);
+        Task<NotificationInstallation> MaintainNotification(NotificationInstallation providerNotifiactionId);
     }
 }

@@ -13,6 +13,7 @@ namespace CalendarService
         public DbSet<StoredConfigState> ConfigStates { get; set; }
         public DbSet<StoredConfiguration> Configurations { get; set; }
         public DbSet<StoredFeed> Feeds { get; set; }
+        public DbSet<StoredNotification> Notifications { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -46,8 +47,15 @@ namespace CalendarService
 
             modelBuilder.Entity<StoredFeed>()
                 .HasKey(v => v.Id);
+
             modelBuilder.Entity<StoredFeed>()
-                .OwnsOne(v => v.Notification);
+                .HasOne(v => v.Notification)
+                .WithOne(v => v.Feed)
+                .HasForeignKey<StoredNotification>(v => v.StoredFeedId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StoredNotification>().
+                HasKey(v => v.NotificationId);
         }
     }
 }

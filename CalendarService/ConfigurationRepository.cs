@@ -90,7 +90,7 @@ namespace CalendarService
             var storedState = await context.ConfigStates.Where(v => v.State == state).SingleOrDefaultAsync();
             if (null != storedState)
             {
-                var expired = (storedState.StoredTime + new TimeSpan(0, 0, 30)) < DateTime.Now;
+                var expired = (storedState.StoredTime + new TimeSpan(0, 1, 30)) < DateTime.Now;
                 context.ConfigStates.Remove(storedState);
                 await context.SaveChangesAsync();
                 if (expired)
@@ -108,7 +108,8 @@ namespace CalendarService
 
         public async Task<StoredConfiguration> GetConfiguration(string configId)
         {
-            return await context.Configurations.Where(v => v.Id == configId).SingleOrDefaultAsync();
+            return await context.Configurations.Include(v => v.SubscribedFeeds)
+                .ThenInclude(v => v.Notification).Where(v => v.Id == configId).SingleOrDefaultAsync();
         }
 
         public async Task<StoredConfiguration[]> GetConfigurations(string userid)
@@ -167,6 +168,18 @@ namespace CalendarService
                 return true;
             }
             return false;
+        }
+
+        public async Task UpdateNotification(string configId, string feedId, NotificationInstallation result)
+        {
+            var feed = await context.Feeds.Where(v => v.ConfigurationId == configId && feedId == v.Id).SingleAsync();
+            feed.Notification = new StoredNotification()
+            {
+                Expires = result.Expires,
+                NotificationId = result.NotificationId,
+                ProviderNotificationId = result.ProviderNotifiactionId
+            };
+            await context.SaveChangesAsync();
         }
     }
 }

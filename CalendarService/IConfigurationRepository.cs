@@ -12,6 +12,6 @@ namespace CalendarService
         Task<StoredConfiguration> GetConfiguration(string configId);
         Task<StoredConfiguration> RefreshTokens(string id, TokenResponse tokens);
         Task<bool> SetFeeds(string v, string id, string[] feedIds);
-        Task UpdateNotification(string feedId, StoredNotification notification);
+        Task UpdateNotification(string configId, string feedId, NotificationInstallation result);
     }
 }

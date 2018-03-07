@@ -55,7 +55,7 @@ namespace CalendarService
                 var baseUri = Configuration["CalendarServiceBaseUri"];
                 o.MSRedirectUri = $"{baseUri}/api/configuration/ms-connect";
                 o.GraphNotificationUri = $"{baseUri}/api/callback/graph";
-                o.NotificationMaintainanceUri = $"{baseUri}/api/callback/renew-config";
+                o.NotificationMaintainanceUri = $"{baseUri}/api/callback/notification-maintainance";
             });
             services.AddTransient<ICalendarConfigurationService, CalendarConfigurationsService>();
             services.AddTransient<IGraphAuthenticationProviderFactory, GraphAuthenticationProviderFactory>();

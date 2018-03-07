@@ -80,6 +80,26 @@ namespace CalendarService.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    NotificationId = table.Column<string>(nullable: false),
+                    Expires = table.Column<DateTime>(nullable: false),
+                    ProviderNotificationId = table.Column<string>(nullable: true),
+                    StoredFeedId = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.NotificationId);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Feeds_StoredFeedId",
+                        column: x => x.StoredFeedId,
+                        principalTable: "Feeds",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_ConfigStates_UserId",
                 table: "ConfigStates",
@@ -94,12 +114,21 @@ namespace CalendarService.Migrations
                 name: "IX_Feeds_ConfigurationId",
                 table: "Feeds",
                 column: "ConfigurationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_StoredFeedId",
+                table: "Notifications",
+                column: "StoredFeedId",
+                unique: true);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "ConfigStates");
+
+            migrationBuilder.DropTable(
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "Feeds");

@@ -11,7 +11,7 @@ using System;
 namespace CalendarService.Migrations
 {
     [DbContext(typeof(CalendarServiceContext))]
-    [Migration("20180227225341_Initial")]
+    [Migration("20180307162017_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -76,6 +76,25 @@ namespace CalendarService.Migrations
                     b.ToTable("Feeds");
                 });
 
+            modelBuilder.Entity("CalendarService.StoredNotification", b =>
+                {
+                    b.Property<string>("NotificationId")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<DateTime>("Expires");
+
+                    b.Property<string>("ProviderNotificationId");
+
+                    b.Property<string>("StoredFeedId");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("StoredFeedId")
+                        .IsUnique();
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("CalendarService.User", b =>
                 {
                     b.Property<string>("Id")
@@ -105,6 +124,14 @@ namespace CalendarService.Migrations
                     b.HasOne("CalendarService.StoredConfiguration", "Configuration")
                         .WithMany("SubscribedFeeds")
                         .HasForeignKey("ConfigurationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("CalendarService.StoredNotification", b =>
+                {
+                    b.HasOne("CalendarService.StoredFeed", "Feed")
+                        .WithOne("Notification")
+                        .HasForeignKey("CalendarService.StoredNotification", "StoredFeedId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 #pragma warning restore 612, 618

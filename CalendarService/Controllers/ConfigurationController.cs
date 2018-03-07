@@ -9,10 +9,13 @@ namespace CalendarService.Controllers
     public class ConfigurationController : Controller
     {
         private readonly ICalendarConfigurationService calendarConfigurationService;
+        private readonly ICalendarService calendarService;
 
-        public ConfigurationController(ICalendarConfigurationService calendarConfigurationService)
+        public ConfigurationController(ICalendarConfigurationService calendarConfigurationService,
+            ICalendarService calendarService)
         {
             this.calendarConfigurationService = calendarConfigurationService;
+            this.calendarService = calendarService;
         }
 
         [HttpGet("list")]
@@ -95,8 +98,9 @@ namespace CalendarService.Controllers
         [HttpPut("{id}/feeds")]
         public async Task<IActionResult> SetFeeds(string id, [FromBody]string[] feedIds)
         {
-            var deleted = await calendarConfigurationService.SetFeeds(User.GetId(), id, feedIds);
-            if (deleted)
+            var changed = await calendarConfigurationService.SetFeeds(User.GetId(), id, feedIds);
+            await calendarService.InstallNotifications(User.GetId());
+            if (changed)
             {
                 return Ok();
             }
