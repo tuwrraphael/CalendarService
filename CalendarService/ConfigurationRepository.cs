@@ -118,7 +118,8 @@ namespace CalendarService
             {
                 return null;
             }
-            return await context.Configurations.Include(v => v.SubscribedFeeds).Where(v => v.UserId == userid).ToArrayAsync();
+            return await context.Configurations.Include(v => v.SubscribedFeeds)
+                .ThenInclude(v => v.Notification).Where(v => v.UserId == userid).ToArrayAsync();
         }
 
         public async Task<StoredConfiguration> RefreshTokens(string id, TokenResponse tokens)

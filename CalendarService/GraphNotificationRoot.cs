@@ -1,4 +1,4 @@
-﻿namespace CalendarService.Controllers
+﻿namespace CalendarService
 {
     public class GraphNotificationRoot
     {

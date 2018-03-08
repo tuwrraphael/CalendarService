@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -52,6 +53,9 @@ namespace CalendarService.Controllers
             {
                 var text = await reader.ReadToEndAsync();
                 logger.LogInformation($"received notification {text}");
+                var client = new HttpClient();
+                await client.PostAsync("https://digit-app.azurewebsites.net/api/device/12345/log", new StringContent(
+                    "{\"code\":0,\"message\": \"Calendar update\"}", Encoding.UTF8, "application/json"));
             }
             return Accepted();
         }

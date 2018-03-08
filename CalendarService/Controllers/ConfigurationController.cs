@@ -10,12 +10,15 @@ namespace CalendarService.Controllers
     {
         private readonly ICalendarConfigurationService calendarConfigurationService;
         private readonly ICalendarService calendarService;
+        private readonly IReminderService reminderService;
 
         public ConfigurationController(ICalendarConfigurationService calendarConfigurationService,
-            ICalendarService calendarService)
+            ICalendarService calendarService,
+            IReminderService reminderService)
         {
             this.calendarConfigurationService = calendarConfigurationService;
             this.calendarService = calendarService;
+            this.reminderService = reminderService;
         }
 
         [HttpGet("list")]
@@ -98,8 +101,12 @@ namespace CalendarService.Controllers
         [HttpPut("{id}/feeds")]
         public async Task<IActionResult> SetFeeds(string id, [FromBody]string[] feedIds)
         {
-            var changed = await calendarConfigurationService.SetFeeds(User.GetId(), id, feedIds);
-            await calendarService.InstallNotifications(User.GetId());
+            var userId = User.GetId();
+            var changed = await calendarConfigurationService.SetFeeds(userId, id, feedIds);
+            if (await reminderService.HasActiveAsync(userId))
+            {
+                await calendarService.InstallNotifications(User.GetId());
+            }
             if (changed)
             {
                 return Ok();
