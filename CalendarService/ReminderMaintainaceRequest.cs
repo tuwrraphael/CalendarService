@@ -2,6 +2,6 @@
 {
     public class ReminderMaintainaceRequest
     {
-        public string UserId { get; set; }
+        public string ReminderId { get; set; }
     }
 }

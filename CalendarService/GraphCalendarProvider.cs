@@ -11,7 +11,7 @@ namespace CalendarService
 {
     public class GraphCalendarProvider : ICalendarProvider
     {
-        private const uint NotificationExpiration = 4*60;
+        private const uint NotificationExpiration = 4 * 60;
 
         private readonly IGraphAuthenticationProviderFactory graphAuthenticationProviderFactory;
         private readonly StoredConfiguration config;
@@ -37,17 +37,23 @@ namespace CalendarService
                     new QueryOption("startDateTime", from.ToUniversalTime().ToString("o")),
                     new QueryOption("endDateTime", to.ToUniversalTime().ToString("o")),
             };
-            var tasks = config.SubscribedFeeds.Select(async v =>
-                await client.Me.Calendars[v.FeedId].CalendarView.Request(options).GetAsync());
+            var tasks = config.SubscribedFeeds.Select(async v => new
+            {
+                feedId = v.Id,
+                events =
+                await client.Me.Calendars[v.FeedId].CalendarView.Request(options).GetAsync()
+            });
             var events = await Task.WhenAll(tasks);
-            return events.SelectMany(v => v).Select(v => new Event()
+            return events.Select(a => a.events.Select(v => new Event()
             {
                 End = DateTime.Parse(v.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
                 Start = DateTime.Parse(v.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
                 Subject = v.Subject,
                 Location = v.Location.DisplayName,
-                IsAllDay = v.IsAllDay.HasValue && v.IsAllDay.Value
-            }).ToArray();
+                IsAllDay = v.IsAllDay.HasValue && v.IsAllDay.Value,
+                Id = v.Id,
+                FeedId = a.feedId
+            })).SelectMany(v => v).ToArray();
         }
 
         public async Task<NotificationInstallation> InstallNotification(string feedId)

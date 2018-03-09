@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using ButlerClient;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace CalendarService
 {
@@ -28,10 +31,32 @@ namespace CalendarService
             options = optionsAccessor.Value;
         }
 
-        public async Task ProcessReminderAsync(ReminderProcessRequest request)
+        public async Task<bool> ProcessReminderAsync(ReminderProcessRequest request)
         {
-            //search for reminder instance and revision
-            //call the webhook
+            var reminder = await reminderRepository.GetAsync(request.ReminderId);
+            var instance = reminder.Instances.Where(v => v.Revision == request.Revision &&
+                v.Id == request.InstanceId).Single();
+            if (null == instance)
+            {
+                return false; //this happens when the revision was updated and butlerservice does not allow to delete hooks
+            }
+            var client = new HttpClient();
+            var res = await client.PostAsync(reminder.NotificationUri, new StringContent(JsonConvert.SerializeObject(new EventReminder
+            {
+                ReminderId = reminder.Id,
+                Event = new Event()
+                {
+                    FeedId = instance.FeedId,
+                    Start = instance.Start,
+                    Id = instance.Id
+                },
+                ClientState = reminder.ClientState
+            }), Encoding.UTF8, "application/json"));
+            if (res.IsSuccessStatusCode)
+            {
+                throw new ReminderDeliveryException();
+            }
+            return true;
         }
 
         public async Task<ReminderRegistration> RegisterAsync(string userId, ReminderRequest request)
@@ -43,27 +68,73 @@ namespace CalendarService
             };
             await reminderRepository.AddAsync(userId, request, registration.Expires);
             await calendarService.InstallNotifications(userId);
-            await MaintainReminders(userId);
+            await MaintainReminder(registration.Id);
             return registration;
         }
 
-        public async Task MaintainReminders(string userId)
+        private async Task<string> InstallButlerForInstance(string reminderId, ReminderInstance instance, Event e)
         {
-            var reminders = await reminderRepository.GetAsync(userId);
-            if (null == reminders || 0 == reminders.Length)
-                return;
-            var longest = reminders.Max(v => v.Minutes) + 10; //add a small threshold to prevent off by one errors
-            var futureTime = Math.Max(MinReminderFuture.TotalMinutes, longest);
-            var events = await calendarService.Get(userId, DateTime.Now,
+            return await butler.InstallAsync(new WebhookRequest()
+            {
+                Data = new ReminderProcessRequest()
+                {
+                    InstanceId = instance.Id,
+                    ReminderId = reminderId,
+                    Revision = instance.Revision
+                },
+                Url = options.ProcessReminderUri,
+                When = e.Start
+            });
+        }
+
+        public async Task MaintainReminder(string reminderId)
+        {
+            var reminder = await reminderRepository.GetAsync(reminderId);
+            //add a small threshold to prevent off by one errors
+            var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + 10;
+            var events = await calendarService.Get(reminder.UserId, DateTime.Now,
                 DateTime.Now.AddMinutes(futureTime));
             foreach (var e in events)
             {
-                foreach (var r in reminders)
+                var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).SingleOrDefault();
+                var shouldFire = e.Start <= DateTime.Now;
+                if (null != instance)
                 {
-                    //search for existing reminder instance - store reminder id with it
-                    //if found and time changed register butler for it; update revision
-                    //if not found create one & register butler for it, revision = 0
-                    //if e should fire, call ProcessReminder instead of registering butler
+                    if (instance.Start != e.Start)
+                    {
+                        instance.Start = e.Start;
+                        instance.Revision++;
+                        await reminderRepository.UpdateInstanceAsync(reminderId, instance);
+                        if (!shouldFire)
+                        {
+                            await InstallButlerForInstance(reminderId, instance, e);
+                        }
+                    }
+                }
+                else
+                {
+                    instance = new ReminderInstance()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        EventId = e.Id,
+                        FeedId = e.FeedId,
+                        Revision = 0,
+                        Start = e.Start
+                    };
+                    await reminderRepository.AddInstanceAsync(reminderId, instance);
+                    if (!shouldFire)
+                    {
+                        await InstallButlerForInstance(reminderId, instance, e);
+                    }
+                }
+                if (shouldFire)
+                {
+                    await ProcessReminderAsync(new ReminderProcessRequest()
+                    {
+                        InstanceId = instance.Id,
+                        ReminderId = reminderId,
+                        Revision = instance.Revision
+                    });
                 }
             }
             await butler.InstallAsync(new WebhookRequest()
@@ -71,7 +142,7 @@ namespace CalendarService
                 Url = options.MaintainRemindersUri,
                 Data = new ReminderMaintainaceRequest()
                 {
-                    UserId = userId
+                    ReminderId = reminderId
                 }
             });
         }
