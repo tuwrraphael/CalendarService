@@ -13,15 +13,15 @@ namespace CalendarService.Controllers
             this.reminderService = reminderService;
         }
 
-        [HttpPost("{userId}/reminders")]
+        [HttpPost("api/users/{userId}/reminders")]
         [Authorize("Service")]
-        public async Task<IActionResult> RegisterReminder(string userId, ReminderRequest request)
+        public async Task<IActionResult> RegisterReminder(string userId, [FromBody]ReminderRequest request)
         {
             var reminderRegistration = await reminderService.RegisterAsync(userId, request);
             return Ok(reminderRegistration);
         }
 
-        [HttpPatch("{userId}/reminders/{id}")]
+        [HttpPatch("api/users/{userId}/reminders/{id}")]
         [Authorize("Service")]
         public async Task<IActionResult> RenewReminder(string userId, string id)
         {

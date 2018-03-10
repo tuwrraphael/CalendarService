@@ -8,5 +8,6 @@ namespace CalendarService
         Task<Event[]> Get(string userId, DateTime from, DateTime to);
         Task InstallNotifications(string userId);
         Task<bool> MaintainNotification(NotificationMaintainanceRequest request);
+        Task<string> GetUserIdByNotificationAsync(string notificationId);
     }
 }

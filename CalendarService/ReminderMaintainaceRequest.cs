@@ -1,6 +1,6 @@
 ﻿namespace CalendarService
 {
-    public class ReminderMaintainaceRequest
+    public class ReminderMaintainanceRequest
     {
         public string ReminderId { get; set; }
     }

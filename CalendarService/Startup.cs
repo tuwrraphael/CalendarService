@@ -61,7 +61,8 @@ namespace CalendarService
             });
             services.AddTransient<ICalendarConfigurationService, CalendarConfigurationsService>();
             services.AddTransient<IGraphAuthenticationProviderFactory, GraphAuthenticationProviderFactory>();
-
+            services.AddTransient<IReminderService, ReminderService>();
+            services.AddTransient<IReminderRepository, ReminderRepository>();
             services.AddTransient<ICalendarService, CalendarService>();
             services.AddTransient<IGraphCalendarProviderFactory, GraphCalendarProviderFactory>();
             services.Configure<ButlerOptions>(Configuration);

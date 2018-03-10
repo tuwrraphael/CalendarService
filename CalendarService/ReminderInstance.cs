@@ -9,5 +9,7 @@ namespace CalendarService
         public DateTime Start { get; set; }
         public int Revision { get; set; }
         public string Id { get; internal set; }
+        public StoredReminder Reminder { get; set; }
+        public string ReminderId { get; set; }
     }
 }

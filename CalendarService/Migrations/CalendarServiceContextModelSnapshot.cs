@@ -19,6 +19,28 @@ namespace CalendarService.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.0.1-rtm-125");
 
+            modelBuilder.Entity("CalendarService.ReminderInstance", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("EventId");
+
+                    b.Property<string>("FeedId");
+
+                    b.Property<string>("ReminderId");
+
+                    b.Property<int>("Revision");
+
+                    b.Property<DateTime>("Start");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReminderId");
+
+                    b.ToTable("ReminderInstances");
+                });
+
             modelBuilder.Entity("CalendarService.StoredConfigState", b =>
                 {
                     b.Property<string>("State")
@@ -94,6 +116,28 @@ namespace CalendarService.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("CalendarService.StoredReminder", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("ClientState");
+
+                    b.Property<DateTime>("Expires");
+
+                    b.Property<uint>("Minutes");
+
+                    b.Property<string>("NotificationUri");
+
+                    b.Property<string>("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reminders");
+                });
+
             modelBuilder.Entity("CalendarService.User", b =>
                 {
                     b.Property<string>("Id")
@@ -102,6 +146,14 @@ namespace CalendarService.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("CalendarService.ReminderInstance", b =>
+                {
+                    b.HasOne("CalendarService.StoredReminder", "Reminder")
+                        .WithMany("Instances")
+                        .HasForeignKey("ReminderId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("CalendarService.StoredConfigState", b =>
@@ -132,6 +184,13 @@ namespace CalendarService.Migrations
                         .WithOne("Notification")
                         .HasForeignKey("CalendarService.StoredNotification", "StoredFeedId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("CalendarService.StoredReminder", b =>
+                {
+                    b.HasOne("CalendarService.User", "User")
+                        .WithMany("Reminders")
+                        .HasForeignKey("UserId");
                 });
 #pragma warning restore 612, 618
         }

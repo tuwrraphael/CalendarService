@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using CalendarService.Controllers;
+﻿using System.Threading.Tasks;
 
 namespace CalendarService
 {
@@ -11,5 +7,9 @@ namespace CalendarService
         Task<ReminderRegistration> RegisterAsync(string userId, ReminderRequest request);
         Task<ReminderRegistration> RenewAsync(string userId, string id);
         Task<bool> HasActiveAsync(string userId);
+        Task MaintainReminderAsync(string reminderId);
+        Task MaintainRemindersForUserAsync(string userId);
+        Task<bool> ProcessReminderAsync(ReminderProcessRequest request);
     }
 }
+

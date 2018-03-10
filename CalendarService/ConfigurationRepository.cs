@@ -182,5 +182,11 @@ namespace CalendarService
             };
             await context.SaveChangesAsync();
         }
+
+        public async Task<string> GetUserIdByNotificationAsync(string notificationId)
+        {
+            return await context.Notifications.Where(v => v.NotificationId == notificationId).Select(v => v.Feed).Select(v => v.Configuration)
+                .Select(v => v.User).Select(v => v.Id).SingleOrDefaultAsync();
+        }
     }
 }

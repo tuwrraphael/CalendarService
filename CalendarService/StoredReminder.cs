@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace CalendarService
 {
@@ -11,5 +12,7 @@ namespace CalendarService
         public string NotificationUri { get; set; }
         public string Id { get; set; }
         public string ClientState { get; set; }
+        public DateTime Expires { get;  set; }
+        public User User { get; internal set; }
     }
 }

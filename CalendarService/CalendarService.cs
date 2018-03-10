@@ -99,5 +99,10 @@ namespace CalendarService
             await InstallButlerForExpiration(config.Id, feed.Id, result.Expires);
             return true;
         }
+
+        public async Task<string> GetUserIdByNotificationAsync(string notificationId)
+        {
+            return await configurationRepository.GetUserIdByNotificationAsync(notificationId);
+        }
     }
 }

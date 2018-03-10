@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System.IO;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,11 +13,15 @@ namespace CalendarService.Controllers
     {
         private readonly ICalendarService calendarService;
         private readonly ILogger<CallbackController> logger;
+        private readonly IReminderService reminderService;
 
-        public CallbackController(ICalendarService calendarService, ILogger<CallbackController> logger)
+        public CallbackController(ICalendarService calendarService,
+            ILogger<CallbackController> logger,
+            IReminderService reminderService)
         {
             this.calendarService = calendarService;
             this.logger = logger;
+            this.reminderService = reminderService;
         }
 
         [AllowAnonymous]
@@ -41,7 +45,6 @@ namespace CalendarService.Controllers
         {
             if (null != validationToken)
             {
-                logger.LogInformation($"resent token");
                 return new ContentResult
                 {
                     ContentType = "text/plain",
@@ -52,12 +55,38 @@ namespace CalendarService.Controllers
             using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
             {
                 var text = await reader.ReadToEndAsync();
-                logger.LogInformation($"received notification {text}");
-                var client = new HttpClient();
-                await client.PostAsync("https://digit-app.azurewebsites.net/api/device/12345/log", new StringContent(
-                    "{\"code\":0,\"message\": \"Calendar update\"}", Encoding.UTF8, "application/json"));
+                var notificaton = JsonConvert.DeserializeObject<GraphNotificationRoot>(text);
+                var userId = await calendarService.GetUserIdByNotificationAsync(notificaton.Value[0].ClientState);
+                if (null != userId)
+                {
+                    await reminderService.MaintainRemindersForUserAsync(userId);
+                }
+                else
+                {
+                    logger.LogError($"User for notification {notificaton.Value[0].ClientState} not found.");
+                }
             }
             return Accepted();
+        }
+
+        [AllowAnonymous]
+        [HttpPost("reminder-maintainance")]
+        public async Task<IActionResult> ReminderMaintainanceCallback([FromBody]ReminderMaintainanceRequest request)
+        {
+            await reminderService.MaintainReminderAsync(request.ReminderId);
+            return Ok();
+        }
+
+        [AllowAnonymous]
+        [HttpPost("reminder-execute")]
+        public async Task<IActionResult> ReminderMaintainanceCallback([FromBody]ReminderProcessRequest request)
+        {
+            var sent = await reminderService.ProcessReminderAsync(request);
+            if (sent)
+            {
+                return Ok();
+            }
+            return NotFound();
         }
     }
 }
