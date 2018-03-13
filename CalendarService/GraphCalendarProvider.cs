@@ -94,7 +94,7 @@ namespace CalendarService
         public async Task<Event> GetAsync(string feedId, string eventId)
         {
             var calendarId = config.SubscribedFeeds.Single(v => v.Id == feedId).FeedId;
-            var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
+            var client = new GraphServiceClient(await AuthenticationProviderAsync());
             var res = await client.Me.Calendars[calendarId].Events[eventId].Request().GetAsync();
             return new Event()
             {
