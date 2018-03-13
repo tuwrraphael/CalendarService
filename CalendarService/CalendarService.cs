@@ -104,5 +104,13 @@ namespace CalendarService
         {
             return await configurationRepository.GetUserIdByNotificationAsync(notificationId);
         }
+
+        public async Task<Event> GetAsync(string userId, string feedId, string eventId)
+        {
+            var configs = await configurationRepository.GetConfigurations(userId);
+            var config = configs.Single(v => v.SubscribedFeeds.Any(a => a.Id == feedId));
+            var provider = GetProvider(config);
+            return await provider.GetAsync(feedId, eventId);
+        }
     }
 }

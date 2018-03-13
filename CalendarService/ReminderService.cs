@@ -44,16 +44,12 @@ namespace CalendarService
             {
                 return false; //this happens when the revision was updated and butlerservice does not allow to delete hooks
             }
+            var ev = await calendarService.GetAsync(reminder.UserId, instance.FeedId, instance.EventId);
             var client = new HttpClient();
             var res = await client.PostAsync(reminder.NotificationUri, new StringContent(JsonConvert.SerializeObject(new ReminderDelivery
             {
                 ReminderId = reminder.Id,
-                Event = new Event()
-                {
-                    FeedId = instance.FeedId,
-                    Start = instance.Start,
-                    Id = instance.Id
-                },
+                Event = ev,
                 ClientState = reminder.ClientState
             }), Encoding.UTF8, "application/json"));
             if (!res.IsSuccessStatusCode)
@@ -105,7 +101,7 @@ namespace CalendarService
                 {
                     if (instance.Start != e.Start)
                     {
-                        instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start, instance.Revision +1);
+                        instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start, instance.Revision + 1);
                         if (!shouldFire)
                         {
                             await InstallButlerForInstance(reminder, instance, e);
@@ -184,10 +180,24 @@ namespace CalendarService
         public async Task MaintainRemindersForUserAsync(string userId)
         {
             var reminders = await reminderRepository.GetActiveForUserAsync(userId);
-            foreach(var reminder in reminders)
+            foreach (var reminder in reminders)
             {
                 await UpdateReminderAsync(reminder);
             }
+        }
+
+        public async Task<ReminderRegistration> GetAsync(string userId, string id)
+        {
+            var reminder = await reminderRepository.GetAsync(id);
+            if (null == reminder || DateTime.Now >= reminder.Expires)
+            {
+                return null;
+            }
+            return new ReminderRegistration()
+            {
+                Id = reminder.Id,
+                Expires = reminder.Expires
+            };
         }
     }
 }

@@ -28,5 +28,18 @@ namespace CalendarService.Controllers
             var reminderRegistration = await reminderService.RenewAsync(userId, id);
             return Ok(reminderRegistration);
         }
+
+        [HttpGet("api/users/{userId}/reminders/{id}")]
+        [Authorize("Service")]
+        public async Task<IActionResult> GetReminder(string userId, string id)
+        {
+            var res = await reminderService.GetAsync(userId, id);
+            if (null == res)
+            {
+                return NotFound();
+            }
+            return Ok();
+        }
+
     }
 }

@@ -90,5 +90,22 @@ namespace CalendarService
                 ProviderNotifiactionId = result.Id
             };
         }
+
+        public async Task<Event> GetAsync(string feedId, string eventId)
+        {
+            var calendarId = config.SubscribedFeeds.Single(v => v.Id == feedId).FeedId;
+            var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
+            var res = await client.Me.Calendars[calendarId].Events[eventId].Request().GetAsync();
+            return new Event()
+            {
+                End = DateTime.Parse(res.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+                Start = DateTime.Parse(res.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+                Subject = res.Subject,
+                Location = res.Location.DisplayName,
+                IsAllDay = res.IsAllDay.HasValue && res.IsAllDay.Value,
+                Id = res.Id,
+                FeedId = feedId
+            };
+        }
     }
 }
