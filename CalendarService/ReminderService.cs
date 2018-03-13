@@ -106,6 +106,15 @@ namespace CalendarService
                         {
                             await InstallButlerForInstance(reminder, instance, e);
                         }
+                        else
+                        {
+                            await ProcessReminderAsync(new ReminderProcessRequest()
+                            {
+                                InstanceId = instance.Id,
+                                ReminderId = reminder.Id,
+                                Revision = instance.Revision
+                            });
+                        }
                     }
                 }
                 else
@@ -123,15 +132,15 @@ namespace CalendarService
                     {
                         await InstallButlerForInstance(reminder, instance, e);
                     }
-                }
-                if (shouldFire)
-                {
-                    await ProcessReminderAsync(new ReminderProcessRequest()
+                    else
                     {
-                        InstanceId = instance.Id,
-                        ReminderId = reminder.Id,
-                        Revision = instance.Revision
-                    });
+                        await ProcessReminderAsync(new ReminderProcessRequest()
+                        {
+                            InstanceId = instance.Id,
+                            ReminderId = reminder.Id,
+                            Revision = instance.Revision
+                        });
+                    }
                 }
             }
         }
