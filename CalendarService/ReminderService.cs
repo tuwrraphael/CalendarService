@@ -16,7 +16,7 @@ namespace CalendarService
         private readonly IButler butler;
         private readonly CalendarConfigurationOptions options;
 
-        private const uint ExpirationMinutes = 10;
+        private const uint ExpirationMinutes = 60;
 
         private static readonly TimeSpan MinReminderFuture = new TimeSpan(24, 0, 0);
 
