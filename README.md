@@ -37,8 +37,9 @@ The app settings should contain these parameters:
 ~~~
         "MSClientId": "Microsoft Graph clientId",
         "MSSecret": "Microsoft Graph secret",
-        "MSRedirectUri": "http://localhost:12345/api/configuration/ms-connect", 
-        "ServiceIdentityUrl" : "Url to your openid connect server"
+        "CalendarServiceBaseUri": "Url to current CalendarService instance eg http://localhost:12345", 
+        "ServiceIdentityUrl" : "Url to your openid connect server",
+        "ButlerEndpoint" : "Url to running instance of butler service eg http://<butler>.westeurope.cloudapp.azure.com:3000"
 ~~~
 
 ## Installation

@@ -11,5 +11,7 @@ namespace CalendarService
         public string Location { get; set; }
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsAllDay { get; set; }
+        public string Id { get; set; }
+        public string FeedId { get; internal set; }
     }
 }

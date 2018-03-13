@@ -13,6 +13,9 @@ namespace CalendarService
         public DbSet<StoredConfigState> ConfigStates { get; set; }
         public DbSet<StoredConfiguration> Configurations { get; set; }
         public DbSet<StoredFeed> Feeds { get; set; }
+        public DbSet<StoredNotification> Notifications { get; set; }
+        public DbSet<StoredReminder> Reminders { get; set; }
+        public DbSet<ReminderInstance> ReminderInstances { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -30,6 +33,10 @@ namespace CalendarService
                 .HasMany(v => v.ConfigStates)
                 .WithOne(t => t.User)
                 .HasForeignKey(t => t.UserId);
+            modelBuilder.Entity<User>()
+                .HasMany(v => v.Reminders)
+                .WithOne(v => v.User)
+                .HasForeignKey(v => v.UserId);
 
             modelBuilder.Entity<StoredConfigState>()
                 .HasKey(v => v.State);
@@ -45,6 +52,25 @@ namespace CalendarService
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<StoredFeed>()
+                .HasKey(v => v.Id);
+            modelBuilder.Entity<StoredFeed>()
+                .HasOne(v => v.Notification)
+                .WithOne(v => v.Feed)
+                .HasForeignKey<StoredNotification>(v => v.StoredFeedId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StoredNotification>().
+                HasKey(v => v.NotificationId);
+
+            modelBuilder.Entity<StoredReminder>()
+                .HasKey(v => v.Id);
+            modelBuilder.Entity<StoredReminder>()
+                .HasMany(v => v.Instances)
+                .WithOne(v => v.Reminder)
+                .HasForeignKey(v => v.ReminderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ReminderInstance>()
                 .HasKey(v => v.Id);
         }
     }

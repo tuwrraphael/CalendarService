@@ -42,24 +42,9 @@ namespace CalendarService.Controllers
 
         [HttpGet("{userId}")]
         [Authorize("Service")]
-        public async Task<IActionResult> GetForUsers(string userId, DateTime? from, DateTime? to)
+        public async Task<IActionResult> GetForUser(string userId, DateTime? from, DateTime? to)
         {
             return await GetCalendarForUser(userId, from, to);
         }
-
-        [HttpPost("{userId}/reminders")]
-        [Authorize("Service")]
-        public async Task<IActionResult> RegisterReminder(string userId, ReminderRequest request)
-        {
-            return Ok();
-        }
-
-        [HttpPatch("{userId}/reminders/{id}")]
-        [Authorize("Service")]
-        public async Task<IActionResult> RenewReminder(string userId, ReminderRequest request)
-        {
-            return Ok();
-        }
-
     }
 }
