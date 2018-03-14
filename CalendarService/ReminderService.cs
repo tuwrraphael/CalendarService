@@ -94,8 +94,8 @@ namespace CalendarService
         {
             //add a small threshold to prevent off by one errors
             var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + EventDiscoveryOverlap;
-            var events = await calendarService.Get(reminder.UserId, DateTime.Now,
-                DateTime.Now.AddMinutes(futureTime));
+            var events = (await calendarService.Get(reminder.UserId, DateTime.Now,
+                DateTime.Now.AddMinutes(futureTime))).Where(v => v.Start >= DateTime.Now);
             foreach (var e in events)
             {
                 var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).SingleOrDefault();
