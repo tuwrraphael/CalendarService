@@ -18,6 +18,9 @@ namespace CalendarService
 
         private const uint ExpirationMinutes = 60;
 
+        private const int ReminderDeletionGracePeriod = 3;
+        private const int EventDiscoveryOverlap = 1;
+
         private static readonly TimeSpan MinReminderFuture = new TimeSpan(24, 0, 0);
 
         public ReminderService(IReminderRepository reminderRepository,
@@ -90,7 +93,7 @@ namespace CalendarService
         private async Task UpdateReminderAsync(StoredReminder reminder)
         {
             //add a small threshold to prevent off by one errors
-            var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + 1;
+            var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + EventDiscoveryOverlap;
             var events = await calendarService.Get(reminder.UserId, DateTime.Now,
                 DateTime.Now.AddMinutes(futureTime));
             foreach (var e in events)
@@ -149,15 +152,15 @@ namespace CalendarService
         {
             var reminder = await reminderRepository.GetAsync(reminderId);
             var now = DateTime.Now;
-            if (now >= reminder.Expires)
+            if (now >= reminder.Expires.AddMinutes(ReminderDeletionGracePeriod))
             {
                 await reminderRepository.DeleteAsync(reminderId);
             }
             else
             {
                 await UpdateReminderAsync(reminder);
-                var aliveTime = reminder.Expires.AddMinutes(1) - now;
-                var when = now.AddMinutes(Math.Min(aliveTime.TotalMinutes, Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) - 1));
+                var aliveTime = reminder.Expires.AddMinutes(ReminderDeletionGracePeriod) - now;
+                var when = now.AddMinutes(Math.Min(aliveTime.TotalMinutes, Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) - EventDiscoveryOverlap));
                 await butler.InstallAsync(new WebhookRequest()
                 {
                     Url = options.MaintainRemindersUri,
