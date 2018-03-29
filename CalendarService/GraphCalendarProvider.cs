@@ -11,7 +11,7 @@ namespace CalendarService
 {
     public class GraphCalendarProvider : ICalendarProvider
     {
-        private const uint NotificationExpiration = 4 * 60;
+        private const uint NotificationExpiration = 4230;//max is 4230
 
         private readonly IGraphAuthenticationProviderFactory graphAuthenticationProviderFactory;
         private readonly StoredConfiguration config;

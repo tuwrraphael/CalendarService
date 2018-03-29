@@ -67,16 +67,19 @@ namespace CalendarService
         public async Task InstallNotifications(string userId)
         {
             var configs = await configurationRepository.GetConfigurations(userId);
-            foreach (var config in configs)
+            if (null != configs)
             {
-                foreach (var feed in config.SubscribedFeeds)
+                foreach (var config in configs)
                 {
-                    if (null == feed.Notification)
+                    foreach (var feed in config.SubscribedFeeds)
                     {
-                        var provider = GetProvider(config);
-                        var result = await provider.InstallNotification(feed.FeedId);
-                        await configurationRepository.UpdateNotification(config.Id, feed.Id, result);
-                        await InstallButlerForExpiration(config.Id, feed.Id, result.Expires);
+                        if (null == feed.Notification)
+                        {
+                            var provider = GetProvider(config);
+                            var result = await provider.InstallNotification(feed.FeedId);
+                            await configurationRepository.UpdateNotification(config.Id, feed.Id, result);
+                            await InstallButlerForExpiration(config.Id, feed.Id, result.Expires);
+                        }
                     }
                 }
             }

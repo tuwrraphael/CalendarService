@@ -16,9 +16,9 @@ namespace CalendarService
         private readonly IButler butler;
         private readonly CalendarConfigurationOptions options;
 
-        private const uint ExpirationMinutes = 60;
+        private const uint ExpirationMinutes = 60 * 4;
 
-        private const int ReminderDeletionGracePeriod = 3;
+        private const int ReminderDeletionGracePeriod = 5;
         private const int EventDiscoveryOverlap = 1;
 
         private static readonly TimeSpan MinReminderFuture = new TimeSpan(24, 0, 0);
@@ -96,15 +96,43 @@ namespace CalendarService
             var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + EventDiscoveryOverlap;
             var events = (await calendarService.Get(reminder.UserId, DateTime.Now,
                 DateTime.Now.AddMinutes(futureTime))).Where(v => v.Start >= DateTime.Now);
-            foreach (var e in events)
+            if (null != events)
             {
-                var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).SingleOrDefault();
-                var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTime.Now;
-                if (null != instance)
+                foreach (var e in events)
                 {
-                    if (instance.Start != e.Start)
+                    var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).SingleOrDefault();
+                    var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTime.Now;
+                    if (null != instance)
                     {
-                        instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start, instance.Revision + 1);
+                        if (instance.Start != e.Start)
+                        {
+                            instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start, instance.Revision + 1);
+                            if (!shouldFire)
+                            {
+                                await InstallButlerForInstance(reminder, instance, e);
+                            }
+                            else
+                            {
+                                await ProcessReminderAsync(new ReminderProcessRequest()
+                                {
+                                    InstanceId = instance.Id,
+                                    ReminderId = reminder.Id,
+                                    Revision = instance.Revision
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        instance = new ReminderInstance()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            EventId = e.Id,
+                            FeedId = e.FeedId,
+                            Revision = 0,
+                            Start = e.Start
+                        };
+                        await reminderRepository.AddInstanceAsync(reminder.Id, instance);
                         if (!shouldFire)
                         {
                             await InstallButlerForInstance(reminder, instance, e);
@@ -118,31 +146,6 @@ namespace CalendarService
                                 Revision = instance.Revision
                             });
                         }
-                    }
-                }
-                else
-                {
-                    instance = new ReminderInstance()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        EventId = e.Id,
-                        FeedId = e.FeedId,
-                        Revision = 0,
-                        Start = e.Start
-                    };
-                    await reminderRepository.AddInstanceAsync(reminder.Id, instance);
-                    if (!shouldFire)
-                    {
-                        await InstallButlerForInstance(reminder, instance, e);
-                    }
-                    else
-                    {
-                        await ProcessReminderAsync(new ReminderProcessRequest()
-                        {
-                            InstanceId = instance.Id,
-                            ReminderId = reminder.Id,
-                            Revision = instance.Revision
-                        });
                     }
                 }
             }

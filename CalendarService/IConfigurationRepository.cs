@@ -8,6 +8,7 @@ namespace CalendarService
         Task<ConfigState> GetConfigState(string state);
         Task<string> AddMicrosoftTokens(string userId, TokenResponse tokens);
         Task CreateConfigState(string userId, string state, string redirectUri);
+        /// <returns>null if user does not exist</returns>
         Task<StoredConfiguration[]> GetConfigurations(string userid);
         Task<StoredConfiguration> GetConfiguration(string configId);
         Task<StoredConfiguration> RefreshTokens(string id, TokenResponse tokens);
