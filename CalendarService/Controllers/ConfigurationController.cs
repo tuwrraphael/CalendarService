@@ -106,6 +106,7 @@ namespace CalendarService.Controllers
             if (await reminderService.HasActiveAsync(userId))
             {
                 await calendarService.InstallNotifications(User.GetId());
+                await reminderService.MaintainRemindersForUserAsync(User.GetId());
             }
             if (changed)
             {

@@ -75,7 +75,7 @@ namespace CalendarService
         }
 
         public async Task<bool> HasActiveReminders(string userId) =>
-            await context.Reminders.Where(v => v.UserId == userId && v.Expires > DateTime.Now).AnyAsync();
+            await context.Reminders.Where(v => v.UserId == userId && v.Expires >= DateTime.Now).AnyAsync();
 
 
         public async Task RenewAsync(string userId, ReminderRegistration registration)
