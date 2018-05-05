@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace CalendarService.Controllers
@@ -43,8 +44,23 @@ namespace CalendarService.Controllers
         [HttpGet("{userId}")]
         [Authorize("Service")]
         public async Task<IActionResult> GetForUser(string userId, DateTime? from, DateTime? to)
-        {
+       {
             return await GetCalendarForUser(userId, from, to);
+        }
+
+        [HttpGet("{userId}/current")]
+        [Authorize("Service")]
+        public async Task<IActionResult> GetCurrentEventForUser(string userId)
+        {
+            var evts = (await calendarService.Get(userId, DateTime.Now, DateTime.Now.AddMinutes(1)));
+            if (null == evts || evts.Length == 0)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Ok(evts.First());
+            }
         }
     }
 }

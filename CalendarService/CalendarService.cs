@@ -37,7 +37,7 @@ namespace CalendarService
             }
         }
 
-        public async Task<Event[]> Get(string userId, DateTime from, DateTime to)
+        public async Task<Models.Event[]> Get(string userId, DateTime from, DateTime to)
         {
             var configs = await configurationRepository.GetConfigurations(userId);
             if (null == configs || 0 == configs.Length)
@@ -108,7 +108,7 @@ namespace CalendarService
             return await configurationRepository.GetUserIdByNotificationAsync(notificationId);
         }
 
-        public async Task<Event> GetAsync(string userId, string feedId, string eventId)
+        public async Task<Models.Event> GetAsync(string userId, string feedId, string eventId)
         {
             var configs = await configurationRepository.GetConfigurations(userId);
             var config = configs.Single(v => v.SubscribedFeeds.Any(a => a.Id == feedId));

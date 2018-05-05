@@ -16,12 +16,12 @@ namespace CalendarService
         private readonly IButler butler;
         private readonly CalendarConfigurationOptions options;
 
-        private const uint ExpirationMinutes = 60 * 4;
+        private const uint ExpirationMinutes = 2 * 60 * 24;
 
         private const int ReminderDeletionGracePeriod = 5;
         private const int EventDiscoveryOverlap = 1;
 
-        private static readonly TimeSpan MinReminderFuture = new TimeSpan(24, 0, 0);
+        private static readonly TimeSpan MinReminderFuture = new TimeSpan(3 * 24, 0, 0);
 
         public ReminderService(IReminderRepository reminderRepository,
             ICalendarService calendarService,
@@ -75,7 +75,7 @@ namespace CalendarService
             return registration;
         }
 
-        private async Task<string> InstallButlerForInstance(StoredReminder reminder, ReminderInstance instance, Event e)
+        private async Task<string> InstallButlerForInstance(StoredReminder reminder, ReminderInstance instance, Models.Event e)
         {
             return await butler.InstallAsync(new WebhookRequest()
             {

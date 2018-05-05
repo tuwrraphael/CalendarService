@@ -1,7 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 
-namespace CalendarService
+namespace CalendarService.Models
 {
     public class Event
     {
@@ -9,9 +8,8 @@ namespace CalendarService
         public DateTime End { get; set; }
         public string Subject { get; set; }
         public string Location { get; set; }
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsAllDay { get; set; }
         public string Id { get; set; }
-        public string FeedId { get; internal set; }
+        public string FeedId { get;  set; }
     }
 }

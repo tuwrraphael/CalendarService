@@ -6,6 +6,7 @@ using ButlerClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
+using CalendarService.Models;
 
 namespace CalendarService
 {
@@ -29,7 +30,7 @@ namespace CalendarService
             options = optionsAccessor.Value;
         }
 
-        public async Task<Event[]> Get(DateTime from, DateTime to)
+        public async Task<Models.Event[]> Get(DateTime from, DateTime to)
         {
             var client = new GraphServiceClient(await AuthenticationProviderAsync());
             var options = new[]
@@ -44,7 +45,7 @@ namespace CalendarService
                 await client.Me.Calendars[v.FeedId].CalendarView.Request(options).GetAsync()
             });
             var events = await Task.WhenAll(tasks);
-            return events.Select(a => a.events.Select(v => new Event()
+            return events.Select(a => a.events.Select(v => new Models.Event()
             {
                 End = DateTime.Parse(v.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
                 Start = DateTime.Parse(v.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
@@ -91,12 +92,12 @@ namespace CalendarService
             };
         }
 
-        public async Task<Event> GetAsync(string feedId, string eventId)
+        public async Task<Models.Event> GetAsync(string feedId, string eventId)
         {
             var calendarId = config.SubscribedFeeds.Single(v => v.Id == feedId).FeedId;
             var client = new GraphServiceClient(await AuthenticationProviderAsync());
             var res = await client.Me.Calendars[calendarId].Events[eventId].Request().GetAsync();
-            return new Event()
+            return new Models.Event()
             {
                 End = DateTime.Parse(res.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
                 Start = DateTime.Parse(res.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
