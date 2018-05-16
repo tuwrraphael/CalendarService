@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>tuwrraphael</Authors>
     <PackageProjectUrl>https://tuwrraphael.github.io/CalendarService</PackageProjectUrl>
     <PackageTags>CalendarService client</PackageTags>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CalendarService.Models\CalendarService.Models.csproj"  />
+    <ProjectReference Include="..\CalendarService.Models\CalendarService.Models.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace CalendarService.Client
 {
     [Serializable]
-    internal class CalendarServiceException : Exception
+    public class CalendarServiceException : Exception
     {
         public CalendarServiceException()
         {
