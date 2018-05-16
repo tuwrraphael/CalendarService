@@ -5,7 +5,9 @@ VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalendarService", "CalendarService\CalendarService.csproj", "{6DD18EFB-3E8D-4F96-A880-94BB616889A7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalendarService.Models", "CalendarService.Models\CalendarService.Models.csproj", "{484FB690-006B-42A3-9D47-72D2A27CC841}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalendarService.Models", "CalendarService.Models\CalendarService.Models.csproj", "{484FB690-006B-42A3-9D47-72D2A27CC841}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalendarService.Client", "CalendarService.Client\CalendarService.Client.csproj", "{2E2ECB47-5362-4779-BC32-F002A3E15118}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{484FB690-006B-42A3-9D47-72D2A27CC841}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{484FB690-006B-42A3-9D47-72D2A27CC841}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{484FB690-006B-42A3-9D47-72D2A27CC841}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E2ECB47-5362-4779-BC32-F002A3E15118}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E2ECB47-5362-4779-BC32-F002A3E15118}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E2ECB47-5362-4779-BC32-F002A3E15118}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E2ECB47-5362-4779-BC32-F002A3E15118}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CalendarService.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace CalendarService

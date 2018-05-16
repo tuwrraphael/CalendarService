@@ -17,6 +17,13 @@ namespace CalendarService.Controllers
         [Authorize("Service")]
         public async Task<IActionResult> RegisterReminder(string userId, [FromBody]ReminderRequest request)
         {
+            if (null == request ||
+                request.Minutes == 0 ||
+                string.IsNullOrEmpty(request.NotificationUri) ||
+                string.IsNullOrEmpty(request.ClientState))
+            {
+                return BadRequest();
+            }
             var reminderRegistration = await reminderService.RegisterAsync(userId, request);
             return Ok(reminderRegistration);
         }

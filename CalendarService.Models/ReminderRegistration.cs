@@ -1,7 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 
-namespace CalendarService
+namespace CalendarService.Models
 {
     public class ReminderRegistration
     {

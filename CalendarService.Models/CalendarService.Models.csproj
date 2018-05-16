@@ -1,15 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.1.0</Version>
-    <Authors>tuwrraphael</Authors>
-    <PackageProjectUrl>https://github.com/tuwrraphael/CalendarService</PackageProjectUrl>
-    <PackageTags>CalendarService models</PackageTags>
-    <Description>Models for calendar service</Description>
-    <RepositoryUrl>https://github.com/tuwrraphael/CalendarService</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
 </Project>
