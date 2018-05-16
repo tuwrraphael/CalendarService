@@ -10,10 +10,10 @@ namespace CalendarService.Client
 {
     public class CalendarServiceClient : ICalendarServiceClient
     {
-        private readonly IAuthenticationProvider<ICalendarServiceClient> authenticationProvider;
+        private readonly IAuthenticationProvider authenticationProvider;
         private readonly CalendarServiceOptions options;
 
-        public CalendarServiceClient(IAuthenticationProvider<ICalendarServiceClient> authenticationProvider, IOptions<CalendarServiceOptions> optionsAccessor)
+        public CalendarServiceClient(IAuthenticationProvider authenticationProvider, IOptions<CalendarServiceOptions> optionsAccessor)
         {
             this.authenticationProvider = authenticationProvider;
             options = optionsAccessor.Value;
