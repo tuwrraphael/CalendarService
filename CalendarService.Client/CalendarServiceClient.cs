@@ -1,7 +1,7 @@
 ﻿using CalendarService.Models;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using OAuthApiClient;
+using OAuthApiClient.Abstractions;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;

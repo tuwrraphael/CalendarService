@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using OAuthApiClient;
+using OAuthApiClient.Abstractions;
 using System;
 
 namespace CalendarService.Client
