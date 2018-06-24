@@ -30,6 +30,39 @@ namespace CalendarService
             options = optionsAccessor.Value;
         }
 
+        private Models.Event ToEvent(Microsoft.Graph.Event v, string feedId)
+        {
+            return new Models.Event()
+            {
+                End = DateTime.Parse(v.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+                Start = DateTime.Parse(v.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+                Subject = v.Subject,
+                Location = new LocationData()
+                {
+                    Address = v.Location.Address != null ? new AddressData()
+                    {
+                        City = v.Location.Address.City,
+                        CountryOrRegion = v.Location.Address.CountryOrRegion,
+                        PostalCode = v.Location.Address.PostalCode,
+                        State = v.Location.Address.State,
+                        Street = v.Location.Address.Street
+                    } : null,
+                    Coordinate = v.Location.Coordinates != null
+                    && v.Location.Coordinates.Longitude.HasValue
+                    && v.Location.Coordinates.Longitude.HasValue ? new GeoCoordinate()
+                    {
+                        Latitude = v.Location.Coordinates.Latitude.Value,
+                        Longitude = v.Location.Coordinates.Longitude.Value
+                    } : null,
+                    Id = v.Location.UniqueId,
+                    Text = v.Location.DisplayName
+                },
+                IsAllDay = v.IsAllDay.HasValue && v.IsAllDay.Value,
+                Id = v.Id,
+                FeedId = feedId
+            };
+        }
+
         public async Task<Models.Event[]> Get(DateTime from, DateTime to)
         {
             var client = new GraphServiceClient(await AuthenticationProviderAsync());
@@ -45,16 +78,7 @@ namespace CalendarService
                 await client.Me.Calendars[v.FeedId].CalendarView.Request(options).GetAsync()
             });
             var events = await Task.WhenAll(tasks);
-            return events.Select(a => a.events.Select(v => new Models.Event()
-            {
-                End = DateTime.Parse(v.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-                Start = DateTime.Parse(v.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-                Subject = v.Subject,
-                Location = v.Location.DisplayName,
-                IsAllDay = v.IsAllDay.HasValue && v.IsAllDay.Value,
-                Id = v.Id,
-                FeedId = a.feedId
-            })).SelectMany(v => v).ToArray();
+            return events.Select(a => a.events.Select(v => ToEvent(v, a.feedId))).SelectMany(v => v).ToArray();
         }
 
         public async Task<NotificationInstallation> InstallNotification(string feedId)
@@ -97,16 +121,7 @@ namespace CalendarService
             var calendarId = config.SubscribedFeeds.Single(v => v.Id == feedId).FeedId;
             var client = new GraphServiceClient(await AuthenticationProviderAsync());
             var res = await client.Me.Calendars[calendarId].Events[eventId].Request().GetAsync();
-            return new Models.Event()
-            {
-                End = DateTime.Parse(res.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-                Start = DateTime.Parse(res.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-                Subject = res.Subject,
-                Location = res.Location.DisplayName,
-                IsAllDay = res.IsAllDay.HasValue && res.IsAllDay.Value,
-                Id = res.Id,
-                FeedId = feedId
-            };
+            return ToEvent(res, feedId);
         }
     }
 }
