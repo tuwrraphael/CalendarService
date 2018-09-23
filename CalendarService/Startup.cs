@@ -8,6 +8,7 @@ using ButlerClient;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,10 @@ namespace CalendarService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc();
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(v =>
+            {
+                v.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
+            });
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy",
@@ -52,9 +56,13 @@ namespace CalendarService
             {
                 o.MSClientId = Configuration["MSClientId"];
                 o.MSSecret = Configuration["MSSecret"];
+                o.GoogleClientID = Configuration["GoogleClientID"];
+                o.GoogleClientSecret = Configuration["GoogleClientSecret"];
                 var baseUri = Configuration["CalendarServiceBaseUri"];
                 o.MSRedirectUri = $"{baseUri}/api/configuration/ms-connect";
+                o.GoogleRedirectUri = $"{baseUri}/api/configuration/google-connect";
                 o.GraphNotificationUri = $"{baseUri}/api/callback/graph";
+                o.GoogleNotificationUri = $"{baseUri}/api/callback/google";
                 o.MaintainRemindersUri = $"{baseUri}/api/callback/reminder-maintainance";
                 o.ProcessReminderUri = $"{baseUri}/api/callback/reminder-execute";
                 o.NotificationMaintainanceUri = $"{baseUri}/api/callback/notification-maintainance";
@@ -67,6 +75,8 @@ namespace CalendarService
             services.AddTransient<IGraphCalendarProviderFactory, GraphCalendarProviderFactory>();
             services.Configure<ButlerOptions>(Configuration);
             services.AddTransient<IButler, Butler>();
+            services.AddTransient<IGoogleCredentialProvider, GoogleCredentialProvider>();
+            services.AddTransient<IGoogleCalendarProviderFactory, GoogleCalendarProviderFactory>();
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,6 +113,11 @@ namespace CalendarService
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                app.UseHsts();
+            }
+            app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseCors("CorsPolicy");
             app.UseMvc();

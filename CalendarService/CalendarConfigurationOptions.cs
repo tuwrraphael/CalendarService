@@ -9,5 +9,9 @@
         public string NotificationMaintainanceUri { get; set; }
         public string MaintainRemindersUri { get; set; }
         public string ProcessReminderUri { get; set; }
+        public string GoogleClientSecret { get; set; }
+        public string GoogleClientID { get; set; }
+        public string GoogleRedirectUri { get; set; }
+        public string GoogleNotificationUri { get; set; }
     }
 }

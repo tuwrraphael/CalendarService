@@ -101,7 +101,7 @@ namespace CalendarService
             };
         }
 
-        public async Task<NotificationInstallation> MaintainNotification(NotificationInstallation installation)
+        public async Task<NotificationInstallation> MaintainNotification(NotificationInstallation installation, string feedId)
         {
             var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
             var sub = await client.Subscriptions[installation.ProviderNotifiactionId].Request().GetAsync();

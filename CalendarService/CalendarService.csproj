@@ -1,12 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <UserSecretsId>f0ee657f-e7a4-4c3e-84a7-a333bdf4c40e</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="Properties\PublishProfiles\calendarsrv - Web Deploy.pubxml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Properties\PublishProfiles\" />
@@ -15,14 +12,11 @@
 
   <ItemGroup>
     <PackageReference Include="ButlerClient" Version="1.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.0.3" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.35.2.1354" />
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="2.1.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Design" Version="2.0.0-preview1-final" />
-    <PackageReference Include="Microsoft.Graph" Version="1.9.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.2" />
+    <PackageReference Include="Microsoft.Graph" Version="1.11.0" />
   </ItemGroup>
 
   <ItemGroup>

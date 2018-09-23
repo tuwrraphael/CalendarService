@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CalendarService
@@ -9,27 +11,28 @@ namespace CalendarService
     public class ConfigurationRepository : IConfigurationRepository
     {
         private readonly CalendarServiceContext context;
+        internal static readonly ConcurrentDictionary<string, SemaphoreSlim> ConfigSemaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
 
         public ConfigurationRepository(CalendarServiceContext context)
         {
             this.context = context;
         }
 
-        private void AddTokens(StoredConfiguration config, TokenResponse tokens)
+        private void FillTokens(StoredConfiguration config, TokenResponse tokens)
         {
             config.RefreshToken = tokens.refresh_token;
             config.AccessToken = tokens.access_token;
             config.ExpiresIn = DateTime.Now.AddSeconds(tokens.expires_in);
         }
 
-        public async Task<string> AddMicrosoftTokens(string userId, TokenResponse tokens)
+        private async Task<string> AddTokens(string userId, TokenResponse tokens, string type)
         {
             var storedConfiguration = new StoredConfiguration()
             {
                 Id = Guid.NewGuid().ToString(),
-                Type = CalendarType.Microsoft
+                Type = type
             };
-            AddTokens(storedConfiguration, tokens);
+            FillTokens(storedConfiguration, tokens);
             var user = await context.Users.Include(v => v.Configurations).FirstOrDefaultAsync(v => v.Id == userId);
             if (null == user)
             {
@@ -52,6 +55,16 @@ namespace CalendarService
             }
             await context.SaveChangesAsync();
             return storedConfiguration.Id;
+        }
+
+        public async Task<string> AddMicrosoftTokens(string userId, TokenResponse tokens)
+        {
+            return await AddTokens(userId, tokens, CalendarType.Microsoft);
+        }
+
+        public async Task<string> AddGoogleTokens(string userId, TokenResponse tokens)
+        {
+            return await AddTokens(userId, tokens, CalendarType.Google);
         }
 
         public async Task CreateConfigState(string userId, string state, string redirectUri)
@@ -125,7 +138,7 @@ namespace CalendarService
         public async Task<StoredConfiguration> RefreshTokens(string id, TokenResponse tokens)
         {
             var config = await context.Configurations.Where(v => v.Id == id).SingleOrDefaultAsync();
-            AddTokens(config, tokens);
+            FillTokens(config, tokens);
             await context.SaveChangesAsync();
             return config;
         }
@@ -174,12 +187,13 @@ namespace CalendarService
         public async Task UpdateNotification(string configId, string feedId, NotificationInstallation result)
         {
             var feed = await context.Feeds.Where(v => v.ConfigurationId == configId && feedId == v.Id).SingleAsync();
-            feed.Notification = new StoredNotification()
+            if (null == feed.Notification)
             {
-                Expires = result.Expires,
-                NotificationId = result.NotificationId,
-                ProviderNotificationId = result.ProviderNotifiactionId
-            };
+                feed.Notification = new StoredNotification();
+            }
+            feed.Notification.Expires = result.Expires;
+            feed.Notification.NotificationId = result.NotificationId;
+            feed.Notification.ProviderNotificationId = result.ProviderNotifiactionId;
             await context.SaveChangesAsync();
         }
 

@@ -15,5 +15,6 @@ namespace CalendarService
         Task<bool> SetFeeds(string v, string id, string[] feedIds);
         Task UpdateNotification(string configId, string feedId, NotificationInstallation result);
         Task<string> GetUserIdByNotificationAsync(string notificationId);
+        Task<string> AddGoogleTokens(string userId, TokenResponse tokenResponse);
     }
 }

@@ -70,6 +70,27 @@ namespace CalendarService.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("google")]
+        public async Task<IActionResult> GoogleCallback(string validationToken)
+        {
+            if (Request.Headers["X-Goog-Resource-State"] == "sync")
+            {
+                return Ok();
+            }
+            var notificationId = Request.Headers["X-Goog-Channel-ID"];
+            var userId = await calendarService.GetUserIdByNotificationAsync(notificationId);
+            if (null != userId)
+            {
+                await reminderService.MaintainRemindersForUserAsync(userId);
+            }
+            else
+            {
+                logger.LogError($"User for notification {notificationId} not found.");
+            }
+            return Ok();
+        }
+
+        [AllowAnonymous]
         [HttpPost("reminder-maintainance")]
         public async Task<IActionResult> ReminderMaintainanceCallback([FromBody]ReminderMaintainanceRequest request)
         {

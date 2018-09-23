@@ -1,4 +1,5 @@
 ﻿using ButlerClient;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
@@ -12,17 +13,23 @@ namespace CalendarService
 
         private readonly IConfigurationRepository configurationRepository;
         private readonly IGraphCalendarProviderFactory graphCalendarProviderFactory;
+        private readonly IGoogleCalendarProviderFactory googleCalendarProviderFactory;
         private readonly IButler butler;
+        private readonly ILogger<CalendarService> logger;
         private readonly CalendarConfigurationOptions options;
 
         public CalendarService(IConfigurationRepository configurationRepository,
             IGraphCalendarProviderFactory graphCalendarProviderFactory,
+            IGoogleCalendarProviderFactory googleCalendarProviderFactory,
             IButler butler,
-            IOptions<CalendarConfigurationOptions> optionsAccessor)
+            IOptions<CalendarConfigurationOptions> optionsAccessor,
+            ILogger<CalendarService> logger)
         {
             this.configurationRepository = configurationRepository;
             this.graphCalendarProviderFactory = graphCalendarProviderFactory;
+            this.googleCalendarProviderFactory = googleCalendarProviderFactory;
             this.butler = butler;
+            this.logger = logger;
             options = optionsAccessor.Value;
         }
 
@@ -32,6 +39,8 @@ namespace CalendarService
             {
                 case CalendarType.Microsoft:
                     return graphCalendarProviderFactory.GetProvider(config);
+                case CalendarType.Google:
+                    return googleCalendarProviderFactory.GetProvider(config);
                 default:
                     throw new NotImplementedException();
             }
@@ -76,9 +85,20 @@ namespace CalendarService
                         if (null == feed.Notification)
                         {
                             var provider = GetProvider(config);
-                            var result = await provider.InstallNotification(feed.FeedId);
-                            await configurationRepository.UpdateNotification(config.Id, feed.Id, result);
-                            await InstallButlerForExpiration(config.Id, feed.Id, result.Expires);
+                            NotificationInstallation result = null;
+                            try
+                            {
+                                result = await provider.InstallNotification(feed.FeedId);
+                            }
+                            catch (Exception e)
+                            {
+                                logger.LogError(e, $"Could not install notification for Feed {feed.Id} of user {userId}");
+                            }
+                            if (null != result)
+                            {
+                                await configurationRepository.UpdateNotification(config.Id, feed.Id, result);
+                                await InstallButlerForExpiration(config.Id, feed.Id, result.Expires);
+                            }
                         }
                     }
                 }
@@ -97,7 +117,8 @@ namespace CalendarService
                 Expires = feed.Notification.Expires,
                 NotificationId = feed.Notification.NotificationId,
                 ProviderNotifiactionId = feed.Notification.ProviderNotificationId
-            });
+            }, feed.FeedId);
+            await configurationRepository.UpdateNotification(config.Id, feed.Id, result);
             var butlerTime = DateTime.Now.AddMilliseconds((result.Expires - DateTime.Now).TotalMilliseconds * RenewNotificationOn);
             await InstallButlerForExpiration(config.Id, feed.Id, result.Expires);
             return true;

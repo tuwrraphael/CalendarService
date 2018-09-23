@@ -40,12 +40,15 @@ namespace CalendarService.Controllers
             switch (request.CalendarType)
             {
                 case CalendarType.Microsoft:
-                    var url = await calendarConfigurationService.GetMicrosoftLinkUrl(userId, request.RedirectUri);
                     return Ok(new CalendarLinkResponse()
                     {
-                        RedirectUri = url
+                        RedirectUri = await calendarConfigurationService.GetMicrosoftLinkUrl(userId, request.RedirectUri)
                     });
                 case CalendarType.Google:
+                    return Ok(new CalendarLinkResponse()
+                    {
+                        RedirectUri = await calendarConfigurationService.GetGoogleLinkUrl(userId, request.RedirectUri)
+                    });
                 default:
                     return BadRequest();
             }
@@ -80,8 +83,19 @@ namespace CalendarService.Controllers
             {
                 return BadRequest();
             }
-            await calendarConfigurationService.LinkGoogle(state, code);
-            return Ok();
+            try
+            {
+                var res = await calendarConfigurationService.LinkGoogle(state, code);
+                if (null != res.RedirectUri)
+                {
+                    return Redirect(res.RedirectUri);
+                }
+                return Ok();
+            }
+            catch (AuthorizationStateNotFoundException)
+            {
+                return BadRequest("state invalid");
+            }
         }
 
         [Authorize("User")]

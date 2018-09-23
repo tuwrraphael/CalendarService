@@ -5,6 +5,7 @@ namespace CalendarService
     public interface ICalendarConfigurationService
     {
         Task<string> GetMicrosoftLinkUrl(string userId, string redirectUri);
+        Task<string> GetGoogleLinkUrl(string userId, string redirectUri);
 
         Task<LinkResult> LinkMicrosoft(string state, string code);
 
