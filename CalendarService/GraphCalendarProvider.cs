@@ -2,11 +2,10 @@
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using ButlerClient;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using CalendarService.Models;
+using System.Net.Http;
 
 namespace CalendarService
 {
@@ -83,37 +82,47 @@ namespace CalendarService
 
         public async Task<NotificationInstallation> InstallNotification(string feedId)
         {
-            var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
-            var notificationId = Guid.NewGuid().ToString();
-            var result = await client.Subscriptions.Request().AddAsync(new Subscription()
+            using (var httpMessageHandler = GraphClientFactory.CreatePipeline(new HttpClientHandler { AllowAutoRedirect = false }, new[] {
+                new RetryHandler()
+            }))
             {
-                ChangeType = "created,updated,deleted",
-                NotificationUrl = options.GraphNotificationUri,
-                ClientState = notificationId,
-                ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration),
-                Resource = $"/me/calendars/{feedId}/events"
-            });
-            return new NotificationInstallation()
-            {
-                NotificationId = notificationId,
-                Expires = result.ExpirationDateTime.Value.UtcDateTime,
-                ProviderNotifiactionId = result.Id
-            };
+                var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync(), new HttpProvider(httpMessageHandler, false, null));
+                var notificationId = Guid.NewGuid().ToString();
+                var result = await client.Subscriptions.Request().AddAsync(new Subscription()
+                {
+                    ChangeType = "created,updated,deleted",
+                    NotificationUrl = options.GraphNotificationUri,
+                    ClientState = notificationId,
+                    ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration),
+                    Resource = $"/me/calendars/{feedId}/events"
+                });
+                return new NotificationInstallation()
+                {
+                    NotificationId = notificationId,
+                    Expires = result.ExpirationDateTime.Value.UtcDateTime,
+                    ProviderNotifiactionId = result.Id
+                };
+            }
         }
 
         public async Task<NotificationInstallation> MaintainNotification(NotificationInstallation installation, string feedId)
         {
-            var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync());
-            var sub = await client.Subscriptions[installation.ProviderNotifiactionId].Request().GetAsync();
-            sub.ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration);
-            var result = await client.Subscriptions[installation.ProviderNotifiactionId].Request()
-                .UpdateAsync(sub);
-            return new NotificationInstallation()
+            using (var httpMessageHandler = GraphClientFactory.CreatePipeline(new HttpClientHandler { AllowAutoRedirect = false }, new[] {
+                new RetryHandler()
+            }))
             {
-                NotificationId = installation.NotificationId,
-                Expires = result.ExpirationDateTime.Value.UtcDateTime,
-                ProviderNotifiactionId = result.Id
-            };
+                var client = new GraphServiceClient("https://graph.microsoft.com/beta/", await AuthenticationProviderAsync(), new HttpProvider(httpMessageHandler, false, null));
+                var sub = await client.Subscriptions[installation.ProviderNotifiactionId].Request().GetAsync();
+                sub.ExpirationDateTime = DateTime.Now.AddMinutes(NotificationExpiration);
+                var result = await client.Subscriptions[installation.ProviderNotifiactionId].Request()
+                    .UpdateAsync(sub);
+                return new NotificationInstallation()
+                {
+                    NotificationId = installation.NotificationId,
+                    Expires = result.ExpirationDateTime.Value.UtcDateTime,
+                    ProviderNotifiactionId = result.Id
+                };
+            }
         }
 
         public async Task<Models.Event> GetAsync(string feedId, string eventId)

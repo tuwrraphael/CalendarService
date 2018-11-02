@@ -2,23 +2,26 @@
 using System.Linq;
 using System.Threading.Tasks;
 using CalendarService.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace CalendarService
 {
-    internal class GoogleCalendarProvider : ICalendarProvider
+    public class GoogleCalendarProvider : ICalendarProvider
     {
         private StoredConfiguration config;
         private IGoogleCredentialProvider googleCredentialProvider;
+        private readonly ILogger<GoogleCalendarProvider> logger;
         private CalendarConfigurationOptions options;
 
         private static readonly TimeSpan NotficationExpiration = new TimeSpan(3, 0, 0, 0);
 
         public GoogleCalendarProvider(StoredConfiguration config, IGoogleCredentialProvider googleCredentialProvider,
-            IOptions<CalendarConfigurationOptions> optionsAccessor)
+            IOptions<CalendarConfigurationOptions> optionsAccessor, ILogger<GoogleCalendarProvider> logger)
         {
             this.config = config;
             this.googleCredentialProvider = googleCredentialProvider;
+            this.logger = logger;
             options = optionsAccessor.Value;
         }
 
@@ -79,14 +82,29 @@ namespace CalendarService
             {
                 NotificationId = notificationId,
                 Expires = DateTimeOffset.FromUnixTimeMilliseconds(watch.Expiration.Value).UtcDateTime,
-                ProviderNotifiactionId = notificationId
+                ProviderNotifiactionId = watch.ResourceId
             };
         }
 
         public async Task<NotificationInstallation> MaintainNotification(NotificationInstallation installation, string feedId)
         {
+            var client = new Google.Apis.Calendar.v3.CalendarService(new Google.Apis.Services.BaseClientService.Initializer()
+            {
+                HttpClientInitializer = await googleCredentialProvider.CreateByConfigAsync(config)
+            });
+            try
+            {
+                var stopResult = await client.Channels.Stop(new Google.Apis.Calendar.v3.Data.Channel()
+                {
+                    Id = installation.NotificationId,
+                    ResourceId = installation.ProviderNotifiactionId
+                }).ExecuteAsync();
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Could not delete existing google notification channel.");
+            }
             var installed = await InstallNotification(feedId);
-            //TODO stop the prior channel - therefore it is required to obtain the resourceid of the watched resource
             return installed;
         }
 
@@ -97,7 +115,7 @@ namespace CalendarService
             {
                 HttpClientInitializer = await googleCredentialProvider.CreateByConfigAsync(config)
             });
-            var res = await client.Events.Get(calendarId,eventId).ExecuteAsync();
+            var res = await client.Events.Get(calendarId, eventId).ExecuteAsync();
             return ToEvent(res, feedId);
         }
     }

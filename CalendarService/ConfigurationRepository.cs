@@ -191,6 +191,12 @@ namespace CalendarService
             {
                 feed.Notification = new StoredNotification();
             }
+            else if (feed.Notification.NotificationId != result.NotificationId)
+            {
+                context.Notifications.Remove(feed.Notification);
+                await context.SaveChangesAsync();
+                feed.Notification = new StoredNotification();
+            }
             feed.Notification.Expires = result.Expires;
             feed.Notification.NotificationId = result.NotificationId;
             feed.Notification.ProviderNotificationId = result.ProviderNotifiactionId;

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CalendarService
 {
@@ -6,17 +7,19 @@ namespace CalendarService
     {
         private readonly IGoogleCredentialProvider googleCredentialProvider;
         private readonly IOptions<CalendarConfigurationOptions> options;
+        private readonly ILogger<GoogleCalendarProvider> logger;
 
         public GoogleCalendarProviderFactory(IGoogleCredentialProvider googleCredentialProvider,
-            IOptions<CalendarConfigurationOptions> options)
+            IOptions<CalendarConfigurationOptions> options, ILogger<GoogleCalendarProvider> logger)
         {
             this.googleCredentialProvider = googleCredentialProvider;
             this.options = options;
+            this.logger = logger;
         }
 
         public ICalendarProvider GetProvider(StoredConfiguration config)
         {
-            return new GoogleCalendarProvider(config, googleCredentialProvider, options);
+            return new GoogleCalendarProvider(config, googleCredentialProvider, options, logger);
         }
     }
 }
