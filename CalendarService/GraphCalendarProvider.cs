@@ -33,8 +33,8 @@ namespace CalendarService
         {
             return new Models.Event()
             {
-                End = DateTime.Parse(v.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
-                Start = DateTime.Parse(v.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal),
+                End = new DateTimeOffset(DateTime.Parse(v.End.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)),
+                Start = new DateTimeOffset(DateTime.Parse(v.Start.DateTime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal)),
                 Subject = v.Subject,
                 Location = new LocationData()
                 {
@@ -62,13 +62,13 @@ namespace CalendarService
             };
         }
 
-        public async Task<Models.Event[]> Get(DateTime from, DateTime to)
+        public async Task<Models.Event[]> Get(DateTimeOffset from, DateTimeOffset to)
         {
             var client = new GraphServiceClient(await AuthenticationProviderAsync());
             var options = new[]
             {
-                    new QueryOption("startDateTime", from.ToUniversalTime().ToString("o")),
-                    new QueryOption("endDateTime", to.ToUniversalTime().ToString("o")),
+                    new QueryOption("startDateTime", from.UtcDateTime.ToString("o")),
+                    new QueryOption("endDateTime", to.UtcDateTime.ToString("o")),
             };
             var tasks = config.SubscribedFeeds.Select(async v => new
             {

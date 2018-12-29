@@ -65,7 +65,7 @@ namespace CalendarService.Client
                 this.clientFactory = clientFactory;
             }
 
-            public async Task<Event[]> Get(DateTime? from, DateTime? to)
+            public async Task<Event[]> Get(DateTimeOffset? from, DateTimeOffset? to)
             {
                 StringBuilder uriBuilder = new StringBuilder($"api/calendar/{userId}");
                 JsonSerializerSettings microsoftDateFormatSettings = new JsonSerializerSettings

@@ -46,7 +46,7 @@ namespace CalendarService
             }
         }
 
-        public async Task<Models.Event[]> Get(string userId, DateTime from, DateTime to)
+        public async Task<Models.Event[]> Get(string userId, DateTimeOffset from, DateTimeOffset to)
         {
             var configs = await configurationRepository.GetConfigurations(userId);
             if (null == configs || 0 == configs.Length)

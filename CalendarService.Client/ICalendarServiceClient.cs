@@ -24,7 +24,7 @@ namespace CalendarService.Client
     public interface IEventCollection
     {
         Task<Event> GetCurrentAsync();
-        Task<Event[]> Get(DateTime? from, DateTime? to);
+        Task<Event[]> Get(DateTimeOffset? from, DateTimeOffset? to);
     }
 
     public interface IReminderCollection

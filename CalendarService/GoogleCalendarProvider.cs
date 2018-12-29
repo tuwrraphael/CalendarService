@@ -37,8 +37,8 @@ namespace CalendarService
             }
             return new Event()
             {
-                End = v.End.DateTime.Value,
-                Start = v.Start.DateTime.Value,
+                End = new DateTimeOffset(v.End.DateTime.Value),
+                Start = new DateTimeOffset(v.Start.DateTime.Value),
                 Subject = v.Summary,
                 Location = new LocationData()
                 {
@@ -50,7 +50,7 @@ namespace CalendarService
             };
         }
 
-        public async Task<Event[]> Get(DateTime from, DateTime to)
+        public async Task<Event[]> Get(DateTimeOffset from, DateTimeOffset to)
         {
             var client = new Google.Apis.Calendar.v3.CalendarService(new Google.Apis.Services.BaseClientService.Initializer()
             {
@@ -59,8 +59,9 @@ namespace CalendarService
             var tasks = config.SubscribedFeeds.Select(async v =>
             {
                 var request = client.Events.List(v.FeedId);
-                request.TimeMin = from;
-                request.TimeMax = to;
+                request.TimeMin = from.UtcDateTime;
+                request.TimeMax = to.UtcDateTime;
+                request.SingleEvents = true;
                 return new
                 {
                     feedId = v.Id,

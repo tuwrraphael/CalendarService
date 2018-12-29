@@ -87,7 +87,7 @@ namespace CalendarService
                     Revision = instance.Revision
                 },
                 Url = options.ProcessReminderUri,
-                When = e.Start.AddMinutes(-reminder.Minutes)
+                When = e.Start.AddMinutes(-reminder.Minutes).UtcDateTime
             });
         }
 
@@ -95,20 +95,20 @@ namespace CalendarService
         {
             //add a small threshold to prevent off by one errors
             var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + EventDiscoveryOverlap;
-            var evts = await calendarService.Get(reminder.UserId, DateTime.Now,
-                DateTime.Now.AddMinutes(futureTime));
+            var evts = await calendarService.Get(reminder.UserId, DateTimeOffset.Now,
+                DateTimeOffset.Now.AddMinutes(futureTime));
             if (null != evts)
             {
-                var events = (evts).Where(v => v.Start >= DateTime.Now);
+                var events = (evts).Where(v => v.Start >= DateTimeOffset.Now);
                 foreach (var e in events)
                 {
                     var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).SingleOrDefault();
-                    var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTime.Now;
+                    var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTimeOffset.Now;
                     if (null != instance)
                     {
-                        if (instance.Start != e.Start)
+                        if (instance.Start != e.Start.UtcDateTime)
                         {
-                            instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start, instance.Revision + 1);
+                            instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start.UtcDateTime, instance.Revision + 1);
                             if (!shouldFire)
                             {
                                 await InstallButlerForInstance(reminder, instance, e);
@@ -132,7 +132,7 @@ namespace CalendarService
                             EventId = e.Id,
                             FeedId = e.FeedId,
                             Revision = 0,
-                            Start = e.Start
+                            Start = e.Start.UtcDateTime
                         };
                         await reminderRepository.AddInstanceAsync(reminder.Id, instance);
                         if (!shouldFire)
