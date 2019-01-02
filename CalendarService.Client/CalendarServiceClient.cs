@@ -67,25 +67,16 @@ namespace CalendarService.Client
 
             public async Task<Event[]> Get(DateTimeOffset? from, DateTimeOffset? to)
             {
-                StringBuilder uriBuilder = new StringBuilder($"api/calendar/{userId}");
-                JsonSerializerSettings microsoftDateFormatSettings = new JsonSerializerSettings
-                {
-                    DateFormatHandling = DateFormatHandling.IsoDateFormat
-                };
+                var query = HttpUtility.ParseQueryString(string.Empty);
                 if (from.HasValue)
                 {
-                    uriBuilder.Append($"?from={HttpUtility.UrlEncode(JsonConvert.SerializeObject(from.Value))}");
-                    if (to.HasValue)
-                    {
-                        uriBuilder.Append($"&to={HttpUtility.UrlEncode(JsonConvert.SerializeObject(to.Value))}");
-                    }
+                    query["from"] = from.Value.ToString("o");
                 }
-                else if (to.HasValue)
+                if (to.HasValue)
                 {
-                    uriBuilder.Append($"?to={HttpUtility.UrlEncode(JsonConvert.SerializeObject(to.Value))}");
+                    query["to"] = to.Value.ToString("o");
                 }
-
-                var res = await (await clientFactory()).GetAsync(uriBuilder.ToString());
+                var res = await (await clientFactory()).GetAsync($"api/calendar/{userId}?{query.ToString()}");
                 if (res.IsSuccessStatusCode)
                 {
                     var content = await res.Content.ReadAsStringAsync();
