@@ -13,6 +13,8 @@ namespace CalendarService
         Task AddInstanceAsync(string reminderId, ReminderInstance instance);
         Task DeleteAsync(string reminderId);
         Task<StoredReminder[]> GetActiveForUserAsync(string userId);
-        Task<ReminderInstance> UpdateInstanceAsync(string id, DateTime start, int revision);
+        Task<ReminderInstance> UpdateInstanceAsync(string id, string hash);
+        Task RemindRemovalUntilAsync(string instanceId, DateTimeOffset end);
+        Task RemoveInstanceAsync(string instanceId);
     }
 }

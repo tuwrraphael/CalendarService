@@ -86,13 +86,26 @@ namespace CalendarService
             await context.SaveChangesAsync();
         }
 
-        public async Task<ReminderInstance> UpdateInstanceAsync(string id, DateTime start, int revision)
+        public async Task<ReminderInstance> UpdateInstanceAsync(string id, string hash)
         {
             var inst = await context.ReminderInstances.Where(v => v.Id == id).SingleAsync();
-            inst.Start = start;
-            inst.Revision = revision;
+            inst.Hash = hash;
             await context.SaveChangesAsync();
             return inst;
+        }
+
+        public async Task RemindRemovalUntilAsync(string instanceId, DateTimeOffset end)
+        {
+            var inst = await context.ReminderInstances.Where(v => v.Id == instanceId).SingleAsync();
+            inst.RemindRemovalUntil = end.UtcDateTime;
+            await context.SaveChangesAsync();
+        }
+
+        public async Task RemoveInstanceAsync(string instanceId)
+        {
+            var inst = await context.ReminderInstances.Where(v => v.Id == instanceId).SingleAsync();
+            context.ReminderInstances.Remove(inst);
+            await context.SaveChangesAsync();
         }
     }
 }

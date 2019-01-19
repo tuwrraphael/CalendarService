@@ -4,6 +4,6 @@
     {
         public string InstanceId { get; set; }
         public string ReminderId { get; set; }
-        public int Revision { get; set; }
+        public string Hash { get; set; }
     }
 }

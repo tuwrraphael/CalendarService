@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -35,6 +36,17 @@ namespace CalendarService
             options = optionsAccessor.Value;
         }
 
+        public async Task PostReminder(StoredReminder reminder, ReminderDelivery delivery)
+        {
+            var client = new HttpClient();
+            var res = await client.PostAsync(reminder.NotificationUri,
+                new StringContent(JsonConvert.SerializeObject(delivery), Encoding.UTF8, "application/json"));
+            if (!res.IsSuccessStatusCode)
+            {
+                throw new ReminderDeliveryException();
+            }
+        }
+
         public async Task<bool> ProcessReminderAsync(ReminderProcessRequest request)
         {
             var reminder = await reminderRepository.GetAsync(request.ReminderId);
@@ -42,24 +54,23 @@ namespace CalendarService
             {
                 return false; //reminder expired
             }
-            var instance = reminder.Instances.Where(v => v.Revision == request.Revision &&
+            var instance = reminder.Instances.Where(v => v.Hash == request.Hash &&
                 v.Id == request.InstanceId).Single();
             if (null == instance)
             {
-                return false; //this happens when the revision was updated and butlerservice does not allow to delete hooks
+                return false; //this happens when the Hash was updated and butlerservice does not allow to delete hooks
             }
             var ev = await calendarService.GetAsync(reminder.UserId, instance.FeedId, instance.EventId);
-            var client = new HttpClient();
-            var res = await client.PostAsync(reminder.NotificationUri, new StringContent(JsonConvert.SerializeObject(new ReminderDelivery
+            await PostReminder(reminder, new ReminderDelivery
             {
                 ReminderId = reminder.Id,
                 Event = ev,
-                ClientState = reminder.ClientState
-            }), Encoding.UTF8, "application/json"));
-            if (!res.IsSuccessStatusCode)
-            {
-                throw new ReminderDeliveryException();
-            }
+                ClientState = reminder.ClientState,
+                FeedId = ev.FeedId,
+                EventId = ev.Id,
+                Removed = false
+            });
+            await reminderRepository.RemindRemovalUntilAsync(request.InstanceId, ev.End);
             return true;
         }
 
@@ -76,7 +87,7 @@ namespace CalendarService
             return registration;
         }
 
-        private async Task<string> InstallButlerForInstance(StoredReminder reminder, ReminderInstance instance, Models.Event e)
+        private async Task<string> InstallButlerForInstance(StoredReminder reminder, ReminderInstance instance, Event e)
         {
             return await butler.InstallAsync(new WebhookRequest()
             {
@@ -84,72 +95,94 @@ namespace CalendarService
                 {
                     InstanceId = instance.Id,
                     ReminderId = reminder.Id,
-                    Revision = instance.Revision
+                    Hash = instance.Hash
                 },
                 Url = options.ProcessReminderUri,
                 When = e.Start.AddMinutes(-reminder.Minutes).UtcDateTime
             });
         }
 
+        private string LocationHashString(LocationData data)
+        {
+            return (null == data || (null == data.Text && null == data.Address && null == data.Coordinate) ? string.Empty :
+                (data.Text ??
+                    (null != data.Address ? $"{data.Address.Street} {data.Address.PostalCode} {data.Address.City} {data.Address.CountryOrRegion}" :
+                    $"{data.Coordinate.Latitude}|{data.Coordinate.Longitude}")));
+        }
+
+        private string ComputeReminderHash(Event evt)
+        {
+            var crypt = new System.Security.Cryptography.SHA256Managed();
+            var hash = new StringBuilder();
+            byte[] crypto = crypt.ComputeHash(Encoding.UTF8.GetBytes($"{evt.Start:o}+{LocationHashString(evt.Location)}"));
+            foreach (byte theByte in crypto)
+            {
+                hash.Append(theByte.ToString("x2"));
+            }
+            return hash.ToString();
+        }
+
         private async Task UpdateReminderAsync(StoredReminder reminder)
         {
             //add a small threshold to prevent off by one errors
             var futureTime = Math.Max(MinReminderFuture.TotalMinutes, reminder.Minutes) + EventDiscoveryOverlap;
-            var evts = await calendarService.Get(reminder.UserId, DateTimeOffset.Now,
-                DateTimeOffset.Now.AddMinutes(futureTime));
-            if (null != evts)
+            var evts = (await calendarService.Get(reminder.UserId, DateTimeOffset.Now,
+                DateTimeOffset.Now.AddMinutes(futureTime))) ?? new Event[0];
+            var events = (evts).Where(v => v.Start >= DateTimeOffset.Now);
+            var existingInstances = new List<ReminderInstance>(reminder.Instances);
+            foreach (var e in events)
             {
-                var events = (evts).Where(v => v.Start >= DateTimeOffset.Now);
-                foreach (var e in events)
+                var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).FirstOrDefault();
+                var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTimeOffset.Now;
+                var eventHash = ComputeReminderHash(e);
+                if (null != instance)
                 {
-                    var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).SingleOrDefault();
-                    var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTimeOffset.Now;
-                    if (null != instance)
+                    existingInstances.Remove(instance);
+                    if (instance.Hash != eventHash)
                     {
-                        if (instance.Start != e.Start.UtcDateTime)
-                        {
-                            instance = await reminderRepository.UpdateInstanceAsync(instance.Id, e.Start.UtcDateTime, instance.Revision + 1);
-                            if (!shouldFire)
-                            {
-                                await InstallButlerForInstance(reminder, instance, e);
-                            }
-                            else
-                            {
-                                await ProcessReminderAsync(new ReminderProcessRequest()
-                                {
-                                    InstanceId = instance.Id,
-                                    ReminderId = reminder.Id,
-                                    Revision = instance.Revision
-                                });
-                            }
-                        }
-                    }
-                    else
-                    {
-                        instance = new ReminderInstance()
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            EventId = e.Id,
-                            FeedId = e.FeedId,
-                            Revision = 0,
-                            Start = e.Start.UtcDateTime
-                        };
-                        await reminderRepository.AddInstanceAsync(reminder.Id, instance);
-                        if (!shouldFire)
-                        {
-                            await InstallButlerForInstance(reminder, instance, e);
-                        }
-                        else
-                        {
-                            await ProcessReminderAsync(new ReminderProcessRequest()
-                            {
-                                InstanceId = instance.Id,
-                                ReminderId = reminder.Id,
-                                Revision = instance.Revision
-                            });
-                        }
+                        instance = await reminderRepository.UpdateInstanceAsync(instance.Id, eventHash);
                     }
                 }
+                else
+                {
+                    instance = new ReminderInstance()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        EventId = e.Id,
+                        FeedId = e.FeedId,
+                        Hash = eventHash
+                    };
+                    await reminderRepository.AddInstanceAsync(reminder.Id, instance);
+                }
+                if (!shouldFire)
+                {
+                    await InstallButlerForInstance(reminder, instance, e);
+                }
+                else
+                {
+                    await ProcessReminderAsync(new ReminderProcessRequest()
+                    {
+                        InstanceId = instance.Id,
+                        ReminderId = reminder.Id,
+                        Hash = eventHash
+                    });
+                }
+            }
+            foreach (var instance in existingInstances)
+            {
+                if (instance.RemindRemovalUntil.HasValue && instance.RemindRemovalUntil > DateTimeOffset.Now.UtcDateTime)
+                {
+                    await PostReminder(reminder, new ReminderDelivery
+                    {
+                        ReminderId = reminder.Id,
+                        ClientState = reminder.ClientState,
+                        Event = null,
+                        EventId = instance.EventId,
+                        FeedId = instance.FeedId,
+                        Removed = true
+                    });
+                }
+                await reminderRepository.RemoveInstanceAsync(instance.Id);
             }
         }
 

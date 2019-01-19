@@ -44,7 +44,7 @@ namespace CalendarService.Controllers
         [HttpGet("{userId}")]
         [Authorize("Service")]
         public async Task<IActionResult> GetForUser(string userId, DateTimeOffset? from, DateTimeOffset? to)
-       {
+        {
             return await GetCalendarForUser(userId, from, to);
         }
 
@@ -60,6 +60,21 @@ namespace CalendarService.Controllers
             else
             {
                 return Ok(evts.First());
+            }
+        }
+
+        [HttpGet("me/{feedId}/{eventId}")]
+        [Authorize("User")]
+        public async Task<IActionResult> GetEvent(string feedId, string eventId)
+        {
+            var evt = await calendarService.GetAsync(User.GetId(), feedId, eventId);
+            if (null == evt)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Ok(evt);
             }
         }
     }
