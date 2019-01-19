@@ -102,26 +102,6 @@ namespace CalendarService
             });
         }
 
-        private string LocationHashString(LocationData data)
-        {
-            return (null == data || (null == data.Text && null == data.Address && null == data.Coordinate) ? string.Empty :
-                (data.Text ??
-                    (null != data.Address ? $"{data.Address.Street} {data.Address.PostalCode} {data.Address.City} {data.Address.CountryOrRegion}" :
-                    $"{data.Coordinate.Latitude}|{data.Coordinate.Longitude}")));
-        }
-
-        private string ComputeReminderHash(Event evt)
-        {
-            var crypt = new System.Security.Cryptography.SHA256Managed();
-            var hash = new StringBuilder();
-            byte[] crypto = crypt.ComputeHash(Encoding.UTF8.GetBytes($"{evt.Start:o}+{LocationHashString(evt.Location)}"));
-            foreach (byte theByte in crypto)
-            {
-                hash.Append(theByte.ToString("x2"));
-            }
-            return hash.ToString();
-        }
-
         private async Task UpdateReminderAsync(StoredReminder reminder)
         {
             //add a small threshold to prevent off by one errors
@@ -134,7 +114,7 @@ namespace CalendarService
             {
                 var instance = reminder.Instances.Where(v => v.EventId == e.Id && v.FeedId == e.FeedId).FirstOrDefault();
                 var shouldFire = e.Start.AddMinutes(-reminder.Minutes) <= DateTimeOffset.Now;
-                var eventHash = ComputeReminderHash(e);
+                var eventHash = e.GenerateHash();
                 if (null != instance)
                 {
                     existingInstances.Remove(instance);

@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CalendarService.Extensions\CalendarService.Extensions.csproj" />
     <ProjectReference Include="..\CalendarService.Models\CalendarService.Models.csproj" />
   </ItemGroup>
 
