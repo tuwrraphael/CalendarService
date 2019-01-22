@@ -121,6 +121,7 @@ namespace CalendarService
                     if (instance.Hash != eventHash)
                     {
                         instance = await reminderRepository.UpdateInstanceAsync(instance.Id, eventHash);
+                        await FireOrInstallAsync(reminder, e, instance, shouldFire, eventHash);
                     }
                 }
                 else
@@ -133,19 +134,7 @@ namespace CalendarService
                         Hash = eventHash
                     };
                     await reminderRepository.AddInstanceAsync(reminder.Id, instance);
-                }
-                if (!shouldFire)
-                {
-                    await InstallButlerForInstance(reminder, instance, e);
-                }
-                else
-                {
-                    await ProcessReminderAsync(new ReminderProcessRequest()
-                    {
-                        InstanceId = instance.Id,
-                        ReminderId = reminder.Id,
-                        Hash = eventHash
-                    });
+                    await FireOrInstallAsync(reminder, e, instance, shouldFire, eventHash);
                 }
             }
             foreach (var instance in existingInstances)
@@ -165,6 +154,25 @@ namespace CalendarService
                 await reminderRepository.RemoveInstanceAsync(instance.Id);
             }
         }
+
+        private async Task FireOrInstallAsync(StoredReminder reminder, Event e, ReminderInstance instance, bool shouldFire, string eventHash)
+        {
+            if (!shouldFire)
+            {
+                await InstallButlerForInstance(reminder, instance, e);
+            }
+            else
+            {
+                await ProcessReminderAsync(new ReminderProcessRequest()
+                {
+                    InstanceId = instance.Id,
+                    ReminderId = reminder.Id,
+                    Hash = eventHash
+                });
+            }
+        }
+
+        //private Task FireOrInstallAsync()
 
         public async Task MaintainReminderAsync(string reminderId)
         {
