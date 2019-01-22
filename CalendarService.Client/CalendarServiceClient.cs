@@ -119,8 +119,68 @@ namespace CalendarService.Client
             public IReminderCollection Reminders => new ReminderCollection(userId, clientFactory);
 
             public IEventCollection Events => new EventCollection(userId, clientFactory);
+
+            public IFeedCollection Feeds => new FeedCollection(userId, clientFactory);
         }
 
+        private class FeedCollection : IFeedCollection
+        {
+            private readonly string userId;
+            private readonly Func<Task<HttpClient>> clientFactory;
+
+            public FeedCollection(string userId, Func<Task<HttpClient>> clientFactory)
+            {
+                this.userId = userId;
+                this.clientFactory = clientFactory;
+            }
+
+            public IFeed this[string feedId] => new FeedClient(userId, feedId, clientFactory);
+        }
+
+        private class FeedClient : IFeed
+        {
+            private readonly string userId;
+            private readonly string feedId;
+            private readonly Func<Task<HttpClient>> clientFactory;
+
+            public FeedClient(string userId, string feedId, Func<Task<HttpClient>> clientFactory)
+            {
+                this.userId = userId;
+                this.feedId = feedId;
+                this.clientFactory = clientFactory;
+            }
+
+            public IFeedEventCollection Events => new FeedEventCollection(userId, feedId, clientFactory);
+        }
+
+        private class FeedEventCollection : IFeedEventCollection
+        {
+            private readonly string userId;
+            private readonly string feedId;
+            private readonly Func<Task<HttpClient>> clientFactory;
+
+            public FeedEventCollection(string userId, string feedId, Func<Task<HttpClient>> clientFactory)
+            {
+                this.userId = userId;
+                this.feedId = feedId;
+                this.clientFactory = clientFactory;
+            }
+
+            public async Task<Event> Get(string Id)
+            {
+                var res = await(await clientFactory()).GetAsync($"api/calendar/{userId}/{feedId}/{Id}");
+                if (res.IsSuccessStatusCode)
+                {
+                    var content = await res.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<Event>(content);
+                }
+                else if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+                throw new CalendarServiceException($"Could not retrieve events: {res.StatusCode}");
+            }
+        } 
         private class ReminderClient : IReminder
         {
             private readonly string userId;

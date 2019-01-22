@@ -77,5 +77,20 @@ namespace CalendarService.Controllers
                 return Ok(evt);
             }
         }
+
+        [HttpGet("{userId}/{feedId}/{eventId}")]
+        [Authorize("Service")]
+        public async Task<IActionResult> GetEvent(string userId, string feedId, string eventId)
+        {
+            var evt = await calendarService.GetAsync(userId, feedId, eventId);
+            if (null == evt)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Ok(evt);
+            }
+        }
     }
 }

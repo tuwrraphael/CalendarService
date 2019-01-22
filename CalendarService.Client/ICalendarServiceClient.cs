@@ -19,6 +19,25 @@ namespace CalendarService.Client
     {
         IReminderCollection Reminders { get; }
         IEventCollection Events { get; }
+        IFeedCollection Feeds { get; }
+    }
+
+    public interface IFeedCollection
+    {
+        IFeed this[string feedId]
+        {
+            get;
+        }
+    }
+
+    public interface IFeed
+    {
+        IFeedEventCollection Events { get; }
+    }
+
+    public interface IFeedEventCollection
+    {
+        Task<Event> Get(string Id);
     }
 
     public interface IEventCollection
