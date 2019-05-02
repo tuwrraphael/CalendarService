@@ -67,8 +67,16 @@ namespace CalendarService
             await context.SaveChangesAsync();
         }
 
-        public async Task<StoredReminder> GetAsync(string reminderId) =>
-            await context.Reminders.Include(v => v.Instances).Where(v => v.Id == reminderId).SingleOrDefaultAsync();
+        public async Task<StoredReminder> GetAsync(string reminderId)
+        {
+            var reminder = await context.Reminders.Include(v => v.Instances).Where(v => v.Id == reminderId).SingleOrDefaultAsync();
+            if (null != reminder)
+            {
+                await context.Entry(reminder).ReloadAsync();
+            }
+            return reminder;
+        }
+
 
         public async Task<StoredReminder[]> GetActiveForUserAsync(string userId)
         {
