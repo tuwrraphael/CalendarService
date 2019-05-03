@@ -9,7 +9,7 @@ namespace CalendarService.Models
         {
             var crypt = new SHA256Managed();
             var hash = new StringBuilder();
-            byte[] crypto = crypt.ComputeHash(Encoding.UTF8.GetBytes($"{evt.Start:o}+{LocationHashString(evt.Location)}"));
+            byte[] crypto = crypt.ComputeHash(Encoding.UTF8.GetBytes($"{evt.Start:o}+{LocationHashString(evt.Location)}+{evt.End:o}"));
             foreach (byte theByte in crypto)
             {
                 hash.Append(theByte.ToString("x2"));
