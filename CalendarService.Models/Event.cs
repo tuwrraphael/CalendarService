@@ -11,5 +11,6 @@ namespace CalendarService.Models
         public bool IsAllDay { get; set; }
         public string Id { get; set; }
         public string FeedId { get;  set; }
+        public EventCategory Category { get; set; }
     }
 }

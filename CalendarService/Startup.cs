@@ -77,6 +77,9 @@ namespace CalendarService
             services.AddTransient<IButler, Butler>();
             services.AddTransient<IGoogleCredentialProvider, GoogleCredentialProvider>();
             services.AddTransient<IGoogleCalendarProviderFactory, GoogleCalendarProviderFactory>();
+            services.AddTransient<IGoogleCalendarColorProviderFactory, GoogleCalendarColorProviderFactory>();
+
+            services.AddMemoryCache();
 
             JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,7 +106,6 @@ namespace CalendarService
                     builder.RequireClaim("scope", "calendar.service");
                 });
             });
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

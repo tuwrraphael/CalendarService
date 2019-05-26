@@ -12,20 +12,23 @@ namespace CalendarService
         private StoredConfiguration config;
         private IGoogleCredentialProvider googleCredentialProvider;
         private readonly ILogger<GoogleCalendarProvider> logger;
+        private readonly GoogleCalendarColorProvider _googleCalendarColorProvider;
         private CalendarConfigurationOptions options;
 
         private static readonly TimeSpan NotficationExpiration = new TimeSpan(3, 0, 0, 0);
 
         public GoogleCalendarProvider(StoredConfiguration config, IGoogleCredentialProvider googleCredentialProvider,
-            IOptions<CalendarConfigurationOptions> optionsAccessor, ILogger<GoogleCalendarProvider> logger)
+            IOptions<CalendarConfigurationOptions> optionsAccessor, ILogger<GoogleCalendarProvider> logger,
+            GoogleCalendarColorProvider googleCalendarColorProvider)
         {
             this.config = config;
             this.googleCredentialProvider = googleCredentialProvider;
             this.logger = logger;
+            _googleCalendarColorProvider = googleCalendarColorProvider;
             options = optionsAccessor.Value;
         }
 
-        private Event ToEvent(Google.Apis.Calendar.v3.Data.Event v, string feedId)
+        private async Task<Event> ToEvent(Google.Apis.Calendar.v3.Data.Event v, string feedId, string providerFeedId)
         {
             if (!v.End.DateTime.HasValue)
             {
@@ -46,7 +49,8 @@ namespace CalendarService
                 },
                 IsAllDay = false,
                 Id = v.Id,
-                FeedId = feedId
+                FeedId = feedId,
+                Category = await _googleCalendarColorProvider.GetCategory(v, providerFeedId)
             };
         }
 
@@ -64,23 +68,24 @@ namespace CalendarService
                 request.SingleEvents = true;
                 return new
                 {
-                    feedId = v.Id,
+                    internalFeedId = v.Id,
+                    providerFeedId = v.FeedId,
                     events = await request.ExecuteAsync()
                 };
             });
             var events = await Task.WhenAll(tasks);
-            return events.Select(a => a.events.Items.Select(v =>
+            return await Task.WhenAll(events.Select(a => a.events.Items.Select(async v =>
             {
                 try
                 {
-                    return ToEvent(v, a.feedId);
+                    return await ToEvent(v, a.internalFeedId, a.providerFeedId);
                 }
                 catch (InvalidEventException e)
                 {
                     logger.LogError(e, "Could not parse event.");
                     return null;
                 }
-            }).Where(v => null != v)).SelectMany(v => v).ToArray();
+            }).Where(v => null != v)).SelectMany(v => v).ToArray());
         }
 
         public async Task<NotificationInstallation> InstallNotification(string feedId)
@@ -136,7 +141,7 @@ namespace CalendarService
                 HttpClientInitializer = await googleCredentialProvider.CreateByConfigAsync(config)
             });
             var res = await client.Events.Get(calendarId, eventId).ExecuteAsync();
-            return ToEvent(res, feedId);
+            return await ToEvent(res, feedId, calendarId);
         }
     }
 }
