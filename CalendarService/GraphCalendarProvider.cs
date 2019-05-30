@@ -82,7 +82,7 @@ namespace CalendarService
 
         public async Task<NotificationInstallation> InstallNotification(string feedId)
         {
-            using (var httpMessageHandler = GraphClientFactory.CreatePipeline(new HttpClientHandler { AllowAutoRedirect = false }, new[] {
+            using (var httpMessageHandler = GraphClientFactory.CreatePipeline(new [] {
                 new RetryHandler()
             }))
             {
@@ -107,7 +107,7 @@ namespace CalendarService
 
         public async Task<NotificationInstallation> MaintainNotification(NotificationInstallation installation, string feedId)
         {
-            using (var httpMessageHandler = GraphClientFactory.CreatePipeline(new HttpClientHandler { AllowAutoRedirect = false }, new[] {
+            using (var httpMessageHandler = GraphClientFactory.CreatePipeline(new[] {
                 new RetryHandler()
             }))
             {
