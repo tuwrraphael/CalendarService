@@ -73,8 +73,8 @@ namespace CalendarService
                     events = await request.ExecuteAsync()
                 };
             });
-            var events = await Task.WhenAll(tasks);
-            return await Task.WhenAll(events.Select(a => a.events.Items.Select(async v =>
+            var eventsForFeeds = await Task.WhenAll(tasks);
+            return (await Task.WhenAll(eventsForFeeds.Select(a => a.events.Items.Select(async v =>
             {
                 try
                 {
@@ -85,7 +85,7 @@ namespace CalendarService
                     logger.LogError(e, "Could not parse event.");
                     return null;
                 }
-            }).Where(v => null != v)).SelectMany(v => v).ToArray());
+            })).SelectMany(v => v).ToArray())).Where(v => null != v).ToArray();
         }
 
         public async Task<NotificationInstallation> InstallNotification(string feedId)
